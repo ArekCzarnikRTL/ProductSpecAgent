@@ -33,6 +33,9 @@ dependencies {
     // Koog AI Agent Framework
     implementation("ai.koog:koog-spring-boot-starter:0.7.3")
 
+    // Mustache templating
+    implementation("com.github.spullara.mustache.java:compiler:0.9.14")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.security:spring-security-test")

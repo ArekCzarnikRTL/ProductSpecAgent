@@ -63,4 +63,26 @@ class ExportControllerTest {
         mockMvc.perform(post("/api/v1/projects/$pid/export"))
             .andExpect(status().isOk())
     }
+
+    @Test
+    fun `POST export ZIP contains docs scaffold`() {
+        val pid = createProject()
+        val result = mockMvc.perform(post("/api/v1/projects/$pid/export"))
+            .andExpect(status().isOk())
+            .andReturn()
+
+        val entries = mutableListOf<String>()
+        ZipInputStream(ByteArrayInputStream(result.response.contentAsByteArray)).use { zis ->
+            var entry = zis.nextEntry
+            while (entry != null) {
+                entries.add(entry.name)
+                entry = zis.nextEntry
+            }
+        }
+
+        assertTrue(entries.any { it.contains("docs/features/00-feature-set-overview.md") }, "Missing overview: $entries")
+        assertTrue(entries.any { it.contains("docs/architecture/overview.md") }, "Missing arch: $entries")
+        assertTrue(entries.any { it.contains("docs/backend/api.md") }, "Missing api: $entries")
+        assertTrue(entries.any { it.contains("docs/frontend/design.md") }, "Missing design: $entries")
+    }
 }
