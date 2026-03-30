@@ -1,0 +1,90 @@
+"use client";
+
+import { useState, useRef, useEffect, type KeyboardEvent } from "react";
+import { Send, Loader2, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ChatMessage } from "./ChatMessage";
+import { useProjectStore } from "@/lib/stores/project-store";
+import { cn } from "@/lib/utils";
+
+interface ChatPanelProps {
+  projectId: string;
+}
+
+export function ChatPanel({ projectId }: ChatPanelProps) {
+  const { messages, chatSending, sendMessage } = useProjectStore();
+  const [input, setInput] = useState("");
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function handleSend() {
+    const text = input.trim();
+    if (!text || chatSending) return;
+    setInput("");
+    await sendMessage(projectId, text);
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-2 border-b px-4 py-3">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Bot size={15} />
+        </div>
+        <span className="text-sm font-semibold">Spec Agent</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        {messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+            <Bot size={32} className="opacity-30" />
+            <p className="text-sm">Say hi! I'll guide you through each step of the spec.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {messages.map((msg) => (
+              <ChatMessage key={msg.id} message={msg} />
+            ))}
+            {chatSending && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 size={12} className="animate-spin" />
+                <span>Agent is thinking...</span>
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+        )}
+      </div>
+
+      <div className="border-t p-3">
+        <div className="flex items-end gap-2 rounded-lg border bg-input p-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Message the agent... (Enter to send)"
+            rows={1}
+            disabled={chatSending}
+            className={cn(
+              "flex-1 resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground",
+              "focus:outline-none disabled:opacity-50",
+              "max-h-32 min-h-[24px]"
+            )}
+          />
+          <Button size="icon-sm" onClick={handleSend} disabled={!input.trim() || chatSending} className="shrink-0">
+            {chatSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
