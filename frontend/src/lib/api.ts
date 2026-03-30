@@ -125,6 +125,33 @@ export interface ResolveDecisionRequest {
   rationale: string;
 }
 
+// ─── Check Types ─────────────────────────────────────────────────────────────
+
+export type CheckSeverity = "ERROR" | "WARNING" | "INFO";
+
+export interface CheckResult {
+  id: string;
+  severity: CheckSeverity;
+  category: string;
+  message: string;
+  relatedArtifact: string | null;
+  suggestedFix: string | null;
+}
+
+export interface CheckSummary {
+  errors: number;
+  warnings: number;
+  infos: number;
+  passed: boolean;
+}
+
+export interface CheckReport {
+  projectId: string;
+  results: CheckResult[];
+  checkedAt: string;
+  summary: CheckSummary;
+}
+
 // ─── Task Types ──────────────────────────────────────────────────────────────
 
 export type TaskType = "EPIC" | "STORY" | "TASK";
@@ -258,6 +285,14 @@ export async function deleteTask(projectId: string, taskId: string): Promise<voi
 
 export async function getTaskCoverage(projectId: string): Promise<CoverageMap> {
   return apiFetch<CoverageMap>(`/api/v1/projects/${projectId}/tasks/coverage`);
+}
+
+export async function runChecks(projectId: string): Promise<CheckReport> {
+  return apiFetch<CheckReport>(`/api/v1/projects/${projectId}/checks`, { method: "POST" });
+}
+
+export async function getCheckResults(projectId: string): Promise<CheckReport> {
+  return apiFetch<CheckReport>(`/api/v1/projects/${projectId}/checks/results`);
 }
 
 export async function exportProject(
