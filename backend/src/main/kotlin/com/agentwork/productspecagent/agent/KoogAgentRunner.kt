@@ -1,9 +1,9 @@
 package com.agentwork.productspecagent.agent
 
 import ai.koog.agents.core.agent.AIAgent
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.model.PromptExecutor
 import ai.koog.prompt.llm.LLModel
-import ai.koog.prompt.llm.OpenAILLMProvider
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -21,10 +21,16 @@ class KoogAgentRunner(
     private val logger = LoggerFactory.getLogger(KoogAgentRunner::class.java)
 
     private val model: LLModel by lazy {
-        LLModel(
-            id = modelName,
-            provider = OpenAILLMProvider()
-        )
+        resolveModel(modelName)
+    }
+
+    private fun resolveModel(name: String): LLModel = when (name) {
+        "gpt-4o" -> OpenAIModels.Chat.GPT4o
+        "gpt-4o-mini" -> OpenAIModels.Chat.GPT4oMini
+        "gpt-4.1" -> OpenAIModels.Chat.GPT4_1
+        "gpt-4.1-mini" -> OpenAIModels.Chat.GPT4_1Mini
+        "gpt-4.1-nano" -> OpenAIModels.Chat.GPT4_1Nano
+        else -> OpenAIModels.Chat.GPT4o
     }
 
     suspend fun run(systemPrompt: String, userMessage: String): String {
