@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: product-spec-agent
+
+cors:
+  allowed-origins: "http://localhost:3000"
+
+koog:
+  provider: anthropic
+  model: claude-sonnet-4-6
