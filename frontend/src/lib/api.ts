@@ -187,6 +187,24 @@ export interface CoverageMap {
   [key: string]: boolean;
 }
 
+// ─── File Explorer Types ─────────────────────────────────────────────────────
+
+export interface FileEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  children?: FileEntry[];
+}
+
+export interface FileContent {
+  path: string;
+  name: string;
+  content: string;
+  language: string;
+  lineCount: number;
+}
+
 // ─── Handoff Types ──────────────────────────────────────────────────────────
 
 export interface HandoffPreview {
@@ -323,6 +341,14 @@ export async function exportHandoff(projectId: string, request: HandoffExportReq
   });
   if (!res.ok) throw new Error("Handoff export failed");
   return res.blob();
+}
+
+export async function listProjectFiles(projectId: string): Promise<FileEntry[]> {
+  return apiFetch<FileEntry[]>(`/api/v1/projects/${projectId}/files`);
+}
+
+export async function readProjectFile(projectId: string, filePath: string): Promise<FileContent> {
+  return apiFetch<FileContent>(`/api/v1/projects/${projectId}/files/${filePath}`);
 }
 
 export async function exportProject(
