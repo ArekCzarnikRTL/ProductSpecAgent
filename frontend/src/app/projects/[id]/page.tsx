@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download } from "lucide-react";
@@ -104,10 +104,10 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
 
   const selectedStepData = flowState?.steps.find((s) => s.stepType === selectedStep);
 
-  const handleSelectStep = (stepType: StepType) => {
+  const handleSelectStep = useCallback((stepType: StepType) => {
     selectStep(stepType);
     setShowDetail(true);
-  };
+  }, [selectStep]);
 
   if (projectLoading) {
     return (
