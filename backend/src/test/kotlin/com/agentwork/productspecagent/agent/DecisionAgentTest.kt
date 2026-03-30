@@ -1,0 +1,64 @@
+package com.agentwork.productspecagent.agent
+
+import com.agentwork.productspecagent.domain.*
+import com.agentwork.productspecagent.service.ProjectService
+import com.agentwork.productspecagent.storage.ProjectStorage
+import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
+import kotlin.test.*
+
+class DecisionAgentTest {
+
+    @TempDir lateinit var tempDir: Path
+    private lateinit var projectService: ProjectService
+    private lateinit var contextBuilder: SpecContextBuilder
+
+    @BeforeEach
+    fun setup() {
+        val storage = ProjectStorage(tempDir.toString())
+        projectService = ProjectService(storage)
+        contextBuilder = SpecContextBuilder(projectService)
+    }
+
+    private fun createFakeAgent(jsonResponse: String): DecisionAgent {
+        return object : DecisionAgent(contextBuilder) {
+            override suspend fun runAgent(prompt: String): String = jsonResponse
+        }
+    }
+
+    @Test
+    fun `generateDecision parses valid JSON response`() = runBlocking {
+        val project = projectService.createProject("Test", "An idea")
+        val agent = createFakeAgent("""
+            {"options":[
+                {"label":"Include in MVP","pros":["Users need it"],"cons":["More time"],"recommended":true},
+                {"label":"Defer to v2","pros":["Faster launch"],"cons":["Users may not adopt"],"recommended":false}
+            ],"recommendation":"Include because users need it early."}
+        """.trimIndent())
+
+        val decision = agent.generateDecision(project.project.id, "MVP scope?", FlowStepType.SCOPE)
+
+        assertEquals("MVP scope?", decision.title)
+        assertEquals(FlowStepType.SCOPE, decision.stepType)
+        assertEquals(DecisionStatus.PENDING, decision.status)
+        assertEquals(2, decision.options.size)
+        assertTrue(decision.options[0].recommended)
+        assertFalse(decision.options[1].recommended)
+        assertContains(decision.recommendation, "Include")
+    }
+
+    @Test
+    fun `generateDecision handles malformed JSON gracefully`() = runBlocking {
+        val project = projectService.createProject("Test", "An idea")
+        val agent = createFakeAgent("This is not JSON at all")
+
+        val decision = agent.generateDecision(project.project.id, "Fallback test", FlowStepType.MVP)
+
+        assertEquals("Fallback test", decision.title)
+        assertEquals(2, decision.options.size) // fallback Yes/No
+        assertEquals(DecisionStatus.PENDING, decision.status)
+    }
+}
