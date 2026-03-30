@@ -3,10 +3,12 @@
 import { useEffect, useState, use } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/chat/ChatPanel";
+import { DecisionLog } from "@/components/decisions/DecisionLog";
 import { useProjectStore } from "@/lib/stores/project-store";
+import { useDecisionStore } from "@/lib/stores/decision-store";
 import type { StepType, FlowStep } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -75,10 +77,15 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
   } = useProjectStore();
 
   const [showDetail, setShowDetail] = useState(false);
+  const [rightTab, setRightTab] = useState<"chat" | "decisions">("chat");
+  const { decisions, loadDecisions: loadDecs, reset: resetDecs } = useDecisionStore();
+  const pendingCount = decisions.filter((d) => d.status === "PENDING").length;
 
   useEffect(() => {
     reset();
+    resetDecs();
     loadProject(id);
+    loadDecs(id);
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedStepData = flowState?.steps.find((s) => s.stepType === selectedStep);
@@ -127,8 +134,39 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
             </div>
           )}
         </div>
-        <div className="w-[340px] shrink-0 overflow-hidden">
-          <ChatPanel projectId={id} />
+        <div className="w-[340px] shrink-0 overflow-hidden flex flex-col border-l">
+          {/* Tab buttons */}
+          <div className="flex border-b">
+            <button
+              onClick={() => setRightTab("chat")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors",
+                rightTab === "chat" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MessageSquare size={13} /> Chat
+            </button>
+            <button
+              onClick={() => setRightTab("decisions")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors",
+                rightTab === "decisions" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Scale size={13} /> Decisions
+              {pendingCount > 0 && (
+                <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{pendingCount}</span>
+              )}
+            </button>
+          </div>
+          {/* Tab content */}
+          <div className="flex-1 overflow-hidden">
+            {rightTab === "chat" ? (
+              <ChatPanel projectId={id} />
+            ) : (
+              <DecisionLog projectId={id} />
+            )}
+          </div>
         </div>
       </div>
     </div>
