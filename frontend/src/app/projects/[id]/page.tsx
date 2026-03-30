@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, use } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download, ShieldCheck, Bot } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download, ShieldCheck, Bot, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExportDialog } from "@/components/export/ExportDialog";
 import { HandoffDialog } from "@/components/handoff/HandoffDialog";
@@ -16,6 +16,7 @@ import { useClarificationStore } from "@/lib/stores/clarification-store";
 import { useTaskStore } from "@/lib/stores/task-store";
 import { TaskTree } from "@/components/tasks/TaskTree";
 import { CheckResultsPanel } from "@/components/checks/CheckResultsPanel";
+import { ExplorerPanel } from "@/components/explorer/ExplorerPanel";
 import type { StepType, FlowStep } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +85,7 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
   } = useProjectStore();
 
   const [showDetail, setShowDetail] = useState(false);
+  const [showExplorer, setShowExplorer] = useState(true);
   const [showExport, setShowExport] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
   const [rightTab, setRightTab] = useState<"chat" | "decisions" | "clarifications" | "tasks" | "checks">("chat");
@@ -149,6 +151,28 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
+        {/* Activity Bar */}
+        <div className="w-10 shrink-0 border-r flex flex-col items-center py-2 gap-2">
+          <button
+            onClick={() => setShowExplorer(!showExplorer)}
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+              showExplorer ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            )}
+            title="File Explorer"
+          >
+            <FolderTree size={16} />
+          </button>
+        </div>
+
+        {/* Explorer Panel */}
+        {showExplorer && (
+          <div className="w-60 shrink-0 border-r overflow-hidden">
+            <ExplorerPanel projectId={id} flowState={flowState} />
+          </div>
+        )}
+
+        {/* Graph area */}
         <div className="flex flex-1 flex-col overflow-hidden border-r">
           <div className={cn("overflow-hidden transition-all", showDetail ? "h-[55%]" : "flex-1")}>
             <SpecFlowGraph flowState={flowState} onSelectStep={handleSelectStep} />
