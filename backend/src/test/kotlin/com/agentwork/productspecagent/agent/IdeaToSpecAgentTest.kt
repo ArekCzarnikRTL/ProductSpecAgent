@@ -1,8 +1,10 @@
 package com.agentwork.productspecagent.agent
 
 import com.agentwork.productspecagent.domain.*
+import com.agentwork.productspecagent.service.ClarificationService
 import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
+import com.agentwork.productspecagent.storage.ClarificationStorage
 import com.agentwork.productspecagent.storage.DecisionStorage
 import com.agentwork.productspecagent.storage.ProjectStorage
 import kotlinx.coroutines.runBlocking
@@ -22,6 +24,8 @@ class IdeaToSpecAgentTest {
     private lateinit var contextBuilder: SpecContextBuilder
     private lateinit var decisionStorage: DecisionStorage
     private lateinit var decisionService: DecisionService
+    private lateinit var clarificationStorage: ClarificationStorage
+    private lateinit var clarificationService: ClarificationService
 
     @BeforeEach
     fun setup() {
@@ -35,10 +39,12 @@ class IdeaToSpecAgentTest {
             }
         }
         decisionService = DecisionService(decisionStorage, fakeDecisionAgent)
+        clarificationStorage = ClarificationStorage(tempDir.toString())
+        clarificationService = ClarificationService(clarificationStorage)
     }
 
     private fun createTestAgent(agentResponse: String): IdeaToSpecAgent {
-        return object : IdeaToSpecAgent(contextBuilder, projectService, "You are IdeaToSpec.", decisionService) {
+        return object : IdeaToSpecAgent(contextBuilder, projectService, "You are IdeaToSpec.", decisionService, clarificationService) {
             override suspend fun runAgent(systemPrompt: String, userMessage: String): String {
                 return agentResponse
             }
@@ -132,5 +138,21 @@ class IdeaToSpecAgentTest {
         val decisions = decisionService.listDecisions(project.project.id)
         assertEquals(1, decisions.size)
         assertEquals("Should feature X be in MVP?", decisions[0].title)
+    }
+
+    @Test
+    fun `chat creates clarification when CLARIFICATION_NEEDED marker present`() = runBlocking {
+        val project = projectService.createProject("Test", "My idea")
+        val agent = createTestAgent(
+            "I noticed a gap.\n[CLARIFICATION_NEEDED]: How should offline users sync? | The spec mentions both online-first and offline support"
+        )
+        val response = agent.chat(project.project.id, "What about sync?")
+
+        assertFalse(response.message.contains("[CLARIFICATION_NEEDED]"))
+        assertNotNull(response.clarificationId)
+
+        val clarifications = clarificationService.listClarifications(project.project.id)
+        assertEquals(1, clarifications.size)
+        assertEquals("How should offline users sync?", clarifications[0].question)
     }
 }

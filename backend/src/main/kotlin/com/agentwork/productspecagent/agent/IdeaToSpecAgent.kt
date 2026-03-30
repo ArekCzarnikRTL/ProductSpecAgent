@@ -1,6 +1,7 @@
 package com.agentwork.productspecagent.agent
 
 import com.agentwork.productspecagent.domain.*
+import com.agentwork.productspecagent.service.ClarificationService
 import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
 import org.springframework.beans.factory.annotation.Value
@@ -12,7 +13,8 @@ open class IdeaToSpecAgent(
     private val contextBuilder: SpecContextBuilder,
     private val projectService: ProjectService,
     @Value("\${agent.system-prompt}") private val baseSystemPrompt: String,
-    private val decisionService: DecisionService
+    private val decisionService: DecisionService,
+    private val clarificationService: ClarificationService
 ) {
 
     private val stepOrder = FlowStepType.entries.toList()
@@ -35,10 +37,15 @@ open class IdeaToSpecAgent(
         val decisionMatch = Regex("""\[DECISION_NEEDED]:\s*(.+)""").find(rawResponse)
         val decisionTitle = decisionMatch?.groupValues?.get(1)?.trim()
 
+        val clarificationMatch = Regex("""\[CLARIFICATION_NEEDED]:\s*([^|]+)\|\s*(.+)""").find(rawResponse)
+        val clarificationQuestion = clarificationMatch?.groupValues?.get(1)?.trim()
+        val clarificationReason = clarificationMatch?.groupValues?.get(2)?.trim()
+
         val cleanMessage = rawResponse
             .replace("[STEP_COMPLETE]", "")
             .replace(Regex("""\[STEP_SUMMARY]:[^\n]*"""), "")
             .replace(Regex("""\[DECISION_NEEDED]:[^\n]*"""), "")
+            .replace(Regex("""\[CLARIFICATION_NEEDED]:[^\n]*"""), "")
             .trim()
 
         var nextStep = currentStep
@@ -48,6 +55,15 @@ open class IdeaToSpecAgent(
         if (decisionTitle != null) {
             val decision = decisionService.createDecision(projectId, decisionTitle, currentStep)
             createdDecisionId = decision.id
+        }
+
+        var createdClarificationId: String? = null
+
+        if (clarificationQuestion != null && clarificationReason != null) {
+            val clarification = clarificationService.createClarification(
+                projectId, clarificationQuestion, clarificationReason, currentStep
+            )
+            createdClarificationId = clarification.id
         }
 
         if (stepCompleted) {
@@ -85,7 +101,8 @@ open class IdeaToSpecAgent(
             message = cleanMessage,
             flowStateChanged = flowStateChanged,
             currentStep = nextStep.name,
-            decisionId = createdDecisionId
+            decisionId = createdDecisionId,
+            clarificationId = createdClarificationId
         )
     }
 

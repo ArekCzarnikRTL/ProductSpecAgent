@@ -1,6 +1,7 @@
 package com.agentwork.productspecagent.api
 
 import com.agentwork.productspecagent.domain.ErrorResponse
+import com.agentwork.productspecagent.service.ClarificationNotFoundException
 import com.agentwork.productspecagent.service.DecisionNotFoundException
 import com.agentwork.productspecagent.service.ProjectNotFoundException
 import org.springframework.http.HttpStatus
@@ -28,6 +29,16 @@ class GlobalExceptionHandler {
         return ErrorResponse(
             error = "NOT_FOUND",
             message = ex.message ?: "Decision not found",
+            timestamp = Instant.now().toString()
+        )
+    }
+
+    @ExceptionHandler(ClarificationNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleClarificationNotFound(ex: ClarificationNotFoundException): ErrorResponse {
+        return ErrorResponse(
+            error = "NOT_FOUND",
+            message = ex.message ?: "Clarification not found",
             timestamp = Instant.now().toString()
         )
     }

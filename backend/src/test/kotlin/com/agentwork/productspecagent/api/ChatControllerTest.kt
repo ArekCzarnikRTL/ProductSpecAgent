@@ -2,6 +2,7 @@ package com.agentwork.productspecagent.api
 
 import com.agentwork.productspecagent.agent.IdeaToSpecAgent
 import com.agentwork.productspecagent.agent.SpecContextBuilder
+import com.agentwork.productspecagent.service.ClarificationService
 import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
 import org.junit.jupiter.api.Test
@@ -29,9 +30,10 @@ class ChatControllerTest {
             contextBuilder: SpecContextBuilder,
             projectService: ProjectService,
             @Value("\${agent.system-prompt}") systemPrompt: String,
-            decisionService: DecisionService
+            decisionService: DecisionService,
+            clarificationService: ClarificationService
         ): IdeaToSpecAgent {
-            return object : IdeaToSpecAgent(contextBuilder, projectService, systemPrompt, decisionService) {
+            return object : IdeaToSpecAgent(contextBuilder, projectService, systemPrompt, decisionService, clarificationService) {
                 override suspend fun runAgent(systemPrompt: String, userMessage: String): String {
                     return if (userMessage.contains("complete")) {
                         "Step is done.\n[STEP_COMPLETE]\n[STEP_SUMMARY]: Summary of the step."
