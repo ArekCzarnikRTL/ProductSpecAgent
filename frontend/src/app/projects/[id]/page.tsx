@@ -3,12 +3,14 @@
 import { useEffect, useState, use } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DecisionLog } from "@/components/decisions/DecisionLog";
+import { ClarificationList } from "@/components/clarifications/ClarificationList";
 import { useProjectStore } from "@/lib/stores/project-store";
 import { useDecisionStore } from "@/lib/stores/decision-store";
+import { useClarificationStore } from "@/lib/stores/clarification-store";
 import type { StepType, FlowStep } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -77,15 +79,19 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
   } = useProjectStore();
 
   const [showDetail, setShowDetail] = useState(false);
-  const [rightTab, setRightTab] = useState<"chat" | "decisions">("chat");
+  const [rightTab, setRightTab] = useState<"chat" | "decisions" | "clarifications">("chat");
   const { decisions, loadDecisions: loadDecs, reset: resetDecs } = useDecisionStore();
   const pendingCount = decisions.filter((d) => d.status === "PENDING").length;
+  const { clarifications: clars, loadClarifications: loadClars, reset: resetClars } = useClarificationStore();
+  const openClarCount = clars.filter((c) => c.status === "OPEN").length;
 
   useEffect(() => {
     reset();
     resetDecs();
+    resetClars();
     loadProject(id);
     loadDecs(id);
+    loadClars(id);
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedStepData = flowState?.steps.find((s) => s.stepType === selectedStep);
@@ -158,13 +164,27 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
                 <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{pendingCount}</span>
               )}
             </button>
+            <button
+              onClick={() => setRightTab("clarifications")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors",
+                rightTab === "clarifications" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <HelpCircle size={13} /> Clarifications
+              {openClarCount > 0 && (
+                <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-400">{openClarCount}</span>
+              )}
+            </button>
           </div>
           {/* Tab content */}
           <div className="flex-1 overflow-hidden">
             {rightTab === "chat" ? (
               <ChatPanel projectId={id} />
-            ) : (
+            ) : rightTab === "decisions" ? (
               <DecisionLog projectId={id} />
+            ) : (
+              <ClarificationList projectId={id} />
             )}
           </div>
         </div>
