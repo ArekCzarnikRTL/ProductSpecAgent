@@ -65,6 +65,43 @@ export interface ChatResponse {
   message: string;
   flowStateChanged: boolean;
   currentStep: string;
+  decisionId: string | null;
+}
+
+// ─── Decision Types ──────────────────────────────────────────────────────────
+
+export type DecisionStatus = "PENDING" | "RESOLVED";
+
+export interface DecisionOption {
+  id: string;
+  label: string;
+  pros: string[];
+  cons: string[];
+  recommended: boolean;
+}
+
+export interface Decision {
+  id: string;
+  projectId: string;
+  stepType: StepType;
+  title: string;
+  options: DecisionOption[];
+  recommendation: string;
+  status: DecisionStatus;
+  chosenOptionId: string | null;
+  rationale: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface CreateDecisionRequest {
+  title: string;
+  stepType: StepType;
+}
+
+export interface ResolveDecisionRequest {
+  chosenOptionId: string;
+  rationale: string;
 }
 
 // ─── API Endpoints ──────────────────────────────────────────────────────────
@@ -98,6 +135,28 @@ export async function getFlowState(projectId: string): Promise<FlowState> {
 
 export async function sendChatMessage(projectId: string, data: ChatRequest): Promise<ChatResponse> {
   return apiFetch<ChatResponse>(`/api/v1/projects/${projectId}/agent/chat`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function listDecisions(projectId: string): Promise<Decision[]> {
+  return apiFetch<Decision[]>(`/api/v1/projects/${projectId}/decisions`);
+}
+
+export async function createDecision(projectId: string, data: CreateDecisionRequest): Promise<Decision> {
+  return apiFetch<Decision>(`/api/v1/projects/${projectId}/decisions`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getDecision(projectId: string, decisionId: string): Promise<Decision> {
+  return apiFetch<Decision>(`/api/v1/projects/${projectId}/decisions/${decisionId}`);
+}
+
+export async function resolveDecision(projectId: string, decisionId: string, data: ResolveDecisionRequest): Promise<Decision> {
+  return apiFetch<Decision>(`/api/v1/projects/${projectId}/decisions/${decisionId}/resolve`, {
     method: "POST",
     body: JSON.stringify(data),
   });

@@ -97,6 +97,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         const flowState = await getFlowState(projectId);
         set({ flowState });
       }
+
+      // If a decision was triggered, fetch it
+      if (resp.decisionId) {
+        const { getDecision } = await import("@/lib/api");
+        const decision = await getDecision(projectId, resp.decisionId);
+        const { useDecisionStore } = await import("@/lib/stores/decision-store");
+        useDecisionStore.getState().addDecision(decision);
+      }
     } catch (err) {
       const errMsg: ChatMessage = {
         id: makeId(),
