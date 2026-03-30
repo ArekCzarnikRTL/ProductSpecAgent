@@ -12,9 +12,7 @@ class ExportService(
     private val projectService: ProjectService,
     private val decisionService: DecisionService,
     private val clarificationService: ClarificationService,
-    private val taskService: TaskService,
-    private val scaffoldGenerator: DocsScaffoldGenerator,
-    private val scaffoldContextBuilder: ScaffoldContextBuilder
+    private val taskService: TaskService
 ) {
     fun exportProject(projectId: String, request: ExportRequest = ExportRequest()): ByteArray {
         val projectResponse = projectService.getProject(projectId)
@@ -66,13 +64,6 @@ class ExportService(
                         zip.addEntry("$prefix/tasks/${String.format("%03d", i + 1)}-$typePrefix-$slug.md", generateTaskMd(t))
                     }
                 }
-            }
-
-            // Docs scaffold
-            val scaffoldContext = scaffoldContextBuilder.build(projectId)
-            val scaffoldEntries = scaffoldGenerator.generate(scaffoldContext)
-            for ((path, content) in scaffoldEntries) {
-                zip.addEntry("$prefix/$path", content)
             }
         }
 
