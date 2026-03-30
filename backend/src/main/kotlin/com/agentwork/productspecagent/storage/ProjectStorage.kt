@@ -2,6 +2,7 @@ package com.agentwork.productspecagent.storage
 
 import com.agentwork.productspecagent.domain.FlowState
 import com.agentwork.productspecagent.domain.Project
+import com.agentwork.productspecagent.domain.WizardData
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.springframework.beans.factory.annotation.Value
@@ -89,5 +90,17 @@ class ProjectStorage(
         val file = projectDir(projectId).resolve(relativePath)
         Files.createDirectories(file.parent)
         Files.writeString(file, content)
+    }
+
+    fun saveWizardData(projectId: String, data: WizardData) {
+        val dir = projectDir(projectId)
+        Files.createDirectories(dir)
+        Files.writeString(dir.resolve("wizard.json"), json.encodeToString(data))
+    }
+
+    fun loadWizardData(projectId: String): WizardData? {
+        val file = projectDir(projectId).resolve("wizard.json")
+        if (!Files.exists(file)) return null
+        return json.decodeFromString<WizardData>(Files.readString(file))
     }
 }

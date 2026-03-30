@@ -91,23 +91,23 @@ class IdeaToSpecAgentTest {
     }
 
     @Test
-    fun `chat does not advance beyond SPEC step`() = runBlocking {
+    fun `chat does not advance beyond FRONTEND step`() = runBlocking {
         val project = projectService.createProject("Test", "Idea")
-        // Manually advance to SPEC step
+        // Manually advance to FRONTEND step (the last step)
         val flowState = projectService.getFlowState(project.project.id)
         val allCompleted = flowState.steps.map { step ->
-            if (step.stepType == FlowStepType.SPEC) step.copy(status = FlowStepStatus.IN_PROGRESS)
+            if (step.stepType == FlowStepType.FRONTEND) step.copy(status = FlowStepStatus.IN_PROGRESS)
             else step.copy(status = FlowStepStatus.COMPLETED)
         }
         projectService.updateFlowState(project.project.id, flowState.copy(
-            steps = allCompleted, currentStep = FlowStepType.SPEC
+            steps = allCompleted, currentStep = FlowStepType.FRONTEND
         ))
 
-        val agent = createTestAgent("Here is your spec.\n[STEP_COMPLETE]\n[STEP_SUMMARY]: Full specification.")
+        val agent = createTestAgent("Here is your frontend spec.\n[STEP_COMPLETE]\n[STEP_SUMMARY]: Full frontend specification.")
         val response = agent.chat(project.project.id, "Finalize")
 
         assertTrue(response.flowStateChanged)
-        assertEquals("SPEC", response.currentStep)
+        assertEquals("FRONTEND", response.currentStep)
     }
 
     @Test
