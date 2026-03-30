@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, use } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download, ShieldCheck, Bot, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,60 +16,10 @@ import { useTaskStore } from "@/lib/stores/task-store";
 import { TaskTree } from "@/components/tasks/TaskTree";
 import { CheckResultsPanel } from "@/components/checks/CheckResultsPanel";
 import { ExplorerPanel } from "@/components/explorer/ExplorerPanel";
-import type { StepType, FlowStep } from "@/lib/api";
+import { StepIndicator } from "@/components/wizard/StepIndicator";
+import { WizardForm } from "@/components/wizard/WizardForm";
+import { useWizardStore } from "@/lib/stores/wizard-store";
 import { cn } from "@/lib/utils";
-
-const SpecFlowGraph = dynamic(
-  () => import("@/components/spec-flow/SpecFlowGraph").then((m) => m.SpecFlowGraph),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" />
-      </div>
-    ),
-  }
-);
-
-function StepBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    OPEN: "bg-muted text-muted-foreground",
-    IN_PROGRESS: "bg-primary text-primary-foreground",
-    COMPLETED: "bg-[oklch(0.65_0.15_160)] text-black",
-  };
-  const labels: Record<string, string> = {
-    OPEN: "Open",
-    IN_PROGRESS: "In Progress",
-    COMPLETED: "Completed",
-  };
-  return (
-    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", styles[status] ?? styles.OPEN)}>
-      {labels[status] ?? status}
-    </span>
-  );
-}
-
-function StepDetailPanel({ step }: { step: FlowStep | undefined }) {
-  if (!step) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        Click a node in the graph to view step details.
-      </div>
-    );
-  }
-  const label = step.stepType.replace("_", " ");
-  return (
-    <div className="h-full overflow-y-auto px-4 py-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold capitalize">{label}</h3>
-        <StepBadge status={step.status} />
-      </div>
-      <p className="text-sm text-muted-foreground italic">
-        Chat with the agent to build this step.
-      </p>
-    </div>
-  );
-}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -80,11 +29,10 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
   const { id } = use(params);
   const {
     project, projectLoading, projectError,
-    flowState, selectedStep,
-    loadProject, selectStep, reset,
+    flowState,
+    loadProject, reset,
   } = useProjectStore();
 
-  const [showDetail, setShowDetail] = useState(false);
   const [showExplorer, setShowExplorer] = useState(true);
   const [showExport, setShowExport] = useState(false);
   const [showHandoff, setShowHandoff] = useState(false);
@@ -100,19 +48,14 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
     resetDecs();
     resetClars();
     resetTasks();
+    useWizardStore.getState().reset();
     loadProject(id);
     loadDecs(id);
     loadClars(id);
     loadTsks(id);
     loadCoverage(id);
+    useWizardStore.getState().loadWizard(id);
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const selectedStepData = flowState?.steps.find((s) => s.stepType === selectedStep);
-
-  const handleSelectStep = useCallback((stepType: StepType) => {
-    selectStep(stepType);
-    setShowDetail(true);
-  }, [selectStep]);
 
   if (projectLoading) {
     return (
@@ -172,16 +115,12 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Graph area */}
+        {/* Wizard area */}
         <div className="flex flex-1 flex-col overflow-hidden border-r">
-          <div className={cn("overflow-hidden transition-all", showDetail ? "h-[55%]" : "flex-1")}>
-            <SpecFlowGraph flowState={flowState} onSelectStep={handleSelectStep} />
+          <StepIndicator />
+          <div className="flex-1 overflow-hidden">
+            <WizardForm projectId={id} />
           </div>
-          {showDetail && (
-            <div className="flex-1 overflow-hidden border-t">
-              <StepDetailPanel step={selectedStepData} />
-            </div>
-          )}
         </div>
         <div className="w-[340px] shrink-0 overflow-hidden flex flex-col border-l">
           {/* Tab buttons */}
