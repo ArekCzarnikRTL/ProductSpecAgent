@@ -259,3 +259,20 @@ export async function deleteTask(projectId: string, taskId: string): Promise<voi
 export async function getTaskCoverage(projectId: string): Promise<CoverageMap> {
   return apiFetch<CoverageMap>(`/api/v1/projects/${projectId}/tasks/coverage`);
 }
+
+export async function exportProject(
+  projectId: string,
+  options: { includeDecisions?: boolean; includeClarifications?: boolean; includeTasks?: boolean } = {}
+): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/api/v1/projects/${projectId}/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      includeDecisions: options.includeDecisions ?? true,
+      includeClarifications: options.includeClarifications ?? true,
+      includeTasks: options.includeTasks ?? true,
+    }),
+  });
+  if (!res.ok) throw new Error("Export failed");
+  return res.blob();
+}
