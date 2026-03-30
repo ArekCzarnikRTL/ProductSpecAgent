@@ -78,4 +78,10 @@ class ProjectStorage(
         Files.createDirectories(dir)
         Files.writeString(dir.resolve(fileName), content)
     }
+
+    fun loadSpecStep(projectId: String, fileName: String): String? {
+        val file = specDir(projectId).resolve(fileName)
+        if (!Files.exists(file)) return null
+        return Files.readString(file)
+    }
 }

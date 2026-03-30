@@ -47,4 +47,18 @@ class ProjectService(private val storage: ProjectStorage) {
         storage.loadProject(id) ?: throw ProjectNotFoundException(id)
         return storage.loadFlowState(id) ?: throw ProjectNotFoundException(id)
     }
+
+    fun updateFlowState(id: String, flowState: FlowState) {
+        storage.loadProject(id) ?: throw ProjectNotFoundException(id)
+        storage.saveFlowState(flowState)
+    }
+
+    fun saveSpecFile(projectId: String, fileName: String, content: String) {
+        storage.loadProject(projectId) ?: throw ProjectNotFoundException(projectId)
+        storage.saveSpecStep(projectId, fileName, content)
+    }
+
+    fun readSpecFile(projectId: String, fileName: String): String? {
+        return storage.loadSpecStep(projectId, fileName)
+    }
 }
