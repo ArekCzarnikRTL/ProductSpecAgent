@@ -18,6 +18,7 @@ class SecurityConfig {
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/health").permitAll()
+                    .requestMatchers("/api/v1/**").permitAll()
                     .anyRequest().authenticated()
             }
         return http.build()
