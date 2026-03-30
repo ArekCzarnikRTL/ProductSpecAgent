@@ -16,6 +16,7 @@ Jedes Feature ist eine eigenständige, implementierbare Einheit. Die Reihenfolge
 | 7 | Consistency Checks | [07-consistency-checks.md](07-consistency-checks.md) | Feature 0, 1, 4 | L |
 | 8 | Agent-ready Handoff | [08-agent-ready-handoff.md](08-agent-ready-handoff.md) | Feature 0, 4, 5 | L |
 | 9 | Spec File Explorer | [09-spec-file-explorer.md](09-spec-file-explorer.md) | Feature 0, 1, 6 | L |
+| 10 | Project Scaffold Export | [10-project-scaffold-export.md](10-project-scaffold-export.md) | Feature 4, 5, 8 | M |
 
 ## Architecture Docs
 
