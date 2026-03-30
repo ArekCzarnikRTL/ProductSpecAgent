@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, use } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExportDialog } from "@/components/export/ExportDialog";
 import { ChatPanel } from "@/components/chat/ChatPanel";
@@ -14,6 +14,7 @@ import { useDecisionStore } from "@/lib/stores/decision-store";
 import { useClarificationStore } from "@/lib/stores/clarification-store";
 import { useTaskStore } from "@/lib/stores/task-store";
 import { TaskTree } from "@/components/tasks/TaskTree";
+import { CheckResultsPanel } from "@/components/checks/CheckResultsPanel";
 import type { StepType, FlowStep } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +84,7 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
 
   const [showDetail, setShowDetail] = useState(false);
   const [showExport, setShowExport] = useState(false);
-  const [rightTab, setRightTab] = useState<"chat" | "decisions" | "clarifications" | "tasks">("chat");
+  const [rightTab, setRightTab] = useState<"chat" | "decisions" | "clarifications" | "tasks" | "checks">("chat");
   const { decisions, loadDecisions: loadDecs, reset: resetDecs } = useDecisionStore();
   const pendingCount = decisions.filter((d) => d.status === "PENDING").length;
   const { clarifications: clars, loadClarifications: loadClars, reset: resetClars } = useClarificationStore();
@@ -201,6 +202,15 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
                 <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{tasks.length}</span>
               )}
             </button>
+            <button
+              onClick={() => setRightTab("checks")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors",
+                rightTab === "checks" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <ShieldCheck size={13} /> Checks
+            </button>
           </div>
           {/* Tab content */}
           <div className="flex-1 overflow-hidden">
@@ -210,8 +220,10 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
               <DecisionLog projectId={id} />
             ) : rightTab === "clarifications" ? (
               <ClarificationList projectId={id} />
-            ) : (
+            ) : rightTab === "tasks" ? (
               <TaskTree projectId={id} />
+            ) : (
+              <CheckResultsPanel projectId={id} />
             )}
           </div>
         </div>
