@@ -125,6 +125,41 @@ export interface ResolveDecisionRequest {
   rationale: string;
 }
 
+// ─── Task Types ──────────────────────────────────────────────────────────────
+
+export type TaskType = "EPIC" | "STORY" | "TASK";
+export type TaskItemStatus = "TODO" | "IN_PROGRESS" | "DONE";
+
+export interface SpecTask {
+  id: string;
+  projectId: string;
+  parentId: string | null;
+  type: TaskType;
+  title: string;
+  description: string;
+  estimate: string;
+  priority: number;
+  status: TaskItemStatus;
+  specSection: StepType | null;
+  dependencies: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  estimate?: string;
+  priority?: number;
+  status?: TaskItemStatus;
+  parentId?: string;
+  dependencies?: string[];
+}
+
+export interface CoverageMap {
+  [key: string]: boolean;
+}
+
 // ─── API Endpoints ──────────────────────────────────────────────────────────
 
 export async function getHealth(): Promise<{ status: string; timestamp: string }> {
@@ -196,4 +231,31 @@ export async function answerClarification(projectId: string, clarificationId: st
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function listTasks(projectId: string): Promise<SpecTask[]> {
+  return apiFetch<SpecTask[]>(`/api/v1/projects/${projectId}/tasks`);
+}
+
+export async function generatePlan(projectId: string): Promise<SpecTask[]> {
+  return apiFetch<SpecTask[]>(`/api/v1/projects/${projectId}/tasks/generate`, { method: "POST" });
+}
+
+export async function getTask(projectId: string, taskId: string): Promise<SpecTask> {
+  return apiFetch<SpecTask>(`/api/v1/projects/${projectId}/tasks/${taskId}`);
+}
+
+export async function updateTask(projectId: string, taskId: string, data: UpdateTaskRequest): Promise<SpecTask> {
+  return apiFetch<SpecTask>(`/api/v1/projects/${projectId}/tasks/${taskId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTask(projectId: string, taskId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/v1/projects/${projectId}/tasks/${taskId}`, { method: "DELETE" });
+}
+
+export async function getTaskCoverage(projectId: string): Promise<CoverageMap> {
+  return apiFetch<CoverageMap>(`/api/v1/projects/${projectId}/tasks/coverage`);
 }
