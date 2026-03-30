@@ -66,6 +66,27 @@ export interface ChatResponse {
   flowStateChanged: boolean;
   currentStep: string;
   decisionId: string | null;
+  clarificationId: string | null;
+}
+
+// ─── Clarification Types ─────────────────────────────────────────────────────
+
+export type ClarificationStatus = "OPEN" | "ANSWERED";
+
+export interface Clarification {
+  id: string;
+  projectId: string;
+  stepType: StepType;
+  question: string;
+  reason: string;
+  status: ClarificationStatus;
+  answer: string | null;
+  createdAt: string;
+  answeredAt: string | null;
+}
+
+export interface AnswerClarificationRequest {
+  answer: string;
 }
 
 // ─── Decision Types ──────────────────────────────────────────────────────────
@@ -157,6 +178,21 @@ export async function getDecision(projectId: string, decisionId: string): Promis
 
 export async function resolveDecision(projectId: string, decisionId: string, data: ResolveDecisionRequest): Promise<Decision> {
   return apiFetch<Decision>(`/api/v1/projects/${projectId}/decisions/${decisionId}/resolve`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function listClarifications(projectId: string): Promise<Clarification[]> {
+  return apiFetch<Clarification[]>(`/api/v1/projects/${projectId}/clarifications`);
+}
+
+export async function getClarification(projectId: string, clarificationId: string): Promise<Clarification> {
+  return apiFetch<Clarification>(`/api/v1/projects/${projectId}/clarifications/${clarificationId}`);
+}
+
+export async function answerClarification(projectId: string, clarificationId: string, data: AnswerClarificationRequest): Promise<Clarification> {
+  return apiFetch<Clarification>(`/api/v1/projects/${projectId}/clarifications/${clarificationId}/answer`, {
     method: "POST",
     body: JSON.stringify(data),
   });

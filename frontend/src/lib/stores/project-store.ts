@@ -105,6 +105,13 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         const { useDecisionStore } = await import("@/lib/stores/decision-store");
         useDecisionStore.getState().addDecision(decision);
       }
+
+      if (resp.clarificationId) {
+        const { getClarification } = await import("@/lib/api");
+        const clarification = await getClarification(projectId, resp.clarificationId);
+        const { useClarificationStore } = await import("@/lib/stores/clarification-store");
+        useClarificationStore.getState().addClarification(clarification);
+      }
     } catch (err) {
       const errMsg: ChatMessage = {
         id: makeId(),
