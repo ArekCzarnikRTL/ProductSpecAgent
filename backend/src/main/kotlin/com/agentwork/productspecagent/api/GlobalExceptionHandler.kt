@@ -4,6 +4,7 @@ import com.agentwork.productspecagent.domain.ErrorResponse
 import com.agentwork.productspecagent.service.ClarificationNotFoundException
 import com.agentwork.productspecagent.service.DecisionNotFoundException
 import com.agentwork.productspecagent.service.ProjectNotFoundException
+import com.agentwork.productspecagent.service.TaskNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -39,6 +40,16 @@ class GlobalExceptionHandler {
         return ErrorResponse(
             error = "NOT_FOUND",
             message = ex.message ?: "Clarification not found",
+            timestamp = Instant.now().toString()
+        )
+    }
+
+    @ExceptionHandler(TaskNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleTaskNotFound(ex: TaskNotFoundException): ErrorResponse {
+        return ErrorResponse(
+            error = "NOT_FOUND",
+            message = ex.message ?: "Task not found",
             timestamp = Instant.now().toString()
         )
     }
