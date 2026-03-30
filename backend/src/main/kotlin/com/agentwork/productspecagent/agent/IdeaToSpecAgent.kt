@@ -1,6 +1,7 @@
 package com.agentwork.productspecagent.agent
 
 import com.agentwork.productspecagent.domain.*
+import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -10,7 +11,8 @@ import java.time.Instant
 open class IdeaToSpecAgent(
     private val contextBuilder: SpecContextBuilder,
     private val projectService: ProjectService,
-    @Value("\${agent.system-prompt}") private val baseSystemPrompt: String
+    @Value("\${agent.system-prompt}") private val baseSystemPrompt: String,
+    private val decisionService: DecisionService
 ) {
 
     private val stepOrder = FlowStepType.entries.toList()
@@ -30,13 +32,23 @@ open class IdeaToSpecAgent(
             .find(rawResponse)
         val summaryContent = summaryMatch?.groupValues?.get(1)?.trim()
 
+        val decisionMatch = Regex("""\[DECISION_NEEDED]:\s*(.+)""").find(rawResponse)
+        val decisionTitle = decisionMatch?.groupValues?.get(1)?.trim()
+
         val cleanMessage = rawResponse
             .replace("[STEP_COMPLETE]", "")
             .replace(Regex("""\[STEP_SUMMARY]:[^\n]*"""), "")
+            .replace(Regex("""\[DECISION_NEEDED]:[^\n]*"""), "")
             .trim()
 
         var nextStep = currentStep
         var flowStateChanged = false
+        var createdDecisionId: String? = null
+
+        if (decisionTitle != null) {
+            val decision = decisionService.createDecision(projectId, decisionTitle, currentStep)
+            createdDecisionId = decision.id
+        }
 
         if (stepCompleted) {
             val fileName = currentStep.name.lowercase() + ".md"
@@ -72,7 +84,8 @@ open class IdeaToSpecAgent(
         return ChatResponse(
             message = cleanMessage,
             flowStateChanged = flowStateChanged,
-            currentStep = nextStep.name
+            currentStep = nextStep.name,
+            decisionId = createdDecisionId
         )
     }
 

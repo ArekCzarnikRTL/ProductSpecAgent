@@ -7,5 +7,6 @@ data class ChatRequest(
 data class ChatResponse(
     val message: String,
     val flowStateChanged: Boolean,
-    val currentStep: String
+    val currentStep: String,
+    val decisionId: String? = null
 )

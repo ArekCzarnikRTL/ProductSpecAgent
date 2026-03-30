@@ -1,7 +1,9 @@
 package com.agentwork.productspecagent.agent
 
 import com.agentwork.productspecagent.domain.*
+import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
+import com.agentwork.productspecagent.storage.DecisionStorage
 import com.agentwork.productspecagent.storage.ProjectStorage
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
@@ -18,16 +20,25 @@ class IdeaToSpecAgentTest {
     private lateinit var storage: ProjectStorage
     private lateinit var projectService: ProjectService
     private lateinit var contextBuilder: SpecContextBuilder
+    private lateinit var decisionStorage: DecisionStorage
+    private lateinit var decisionService: DecisionService
 
     @BeforeEach
     fun setup() {
         storage = ProjectStorage(tempDir.toString())
         projectService = ProjectService(storage)
         contextBuilder = SpecContextBuilder(projectService)
+        decisionStorage = DecisionStorage(tempDir.toString())
+        val fakeDecisionAgent = object : DecisionAgent(contextBuilder) {
+            override suspend fun runAgent(prompt: String): String {
+                return """{"options":[{"label":"Yes","pros":["pro1"],"cons":[],"recommended":true},{"label":"No","pros":[],"cons":["con1"],"recommended":false}],"recommendation":"Go with Yes"}"""
+            }
+        }
+        decisionService = DecisionService(decisionStorage, fakeDecisionAgent)
     }
 
     private fun createTestAgent(agentResponse: String): IdeaToSpecAgent {
-        return object : IdeaToSpecAgent(contextBuilder, projectService, "You are IdeaToSpec.") {
+        return object : IdeaToSpecAgent(contextBuilder, projectService, "You are IdeaToSpec.", decisionService) {
             override suspend fun runAgent(systemPrompt: String, userMessage: String): String {
                 return agentResponse
             }
@@ -103,5 +114,23 @@ class IdeaToSpecAgentTest {
         assertFalse(response.message.contains("[STEP_COMPLETE]"))
         assertFalse(response.message.contains("[STEP_SUMMARY]"))
         assertTrue(response.message.contains("Summary done."))
+    }
+
+    @Test
+    fun `chat creates decision when DECISION_NEEDED marker present`() = runBlocking {
+        val project = projectService.createProject("Test", "My idea")
+        val agent = createTestAgent(
+            "I think we need to decide on the scope.\n[DECISION_NEEDED]: Should feature X be in MVP?"
+        )
+
+        val response = agent.chat(project.project.id, "What about the scope?")
+
+        assertFalse(response.message.contains("[DECISION_NEEDED]"))
+        assertNotNull(response.decisionId)
+
+        // Verify decision was created
+        val decisions = decisionService.listDecisions(project.project.id)
+        assertEquals(1, decisions.size)
+        assertEquals("Should feature X be in MVP?", decisions[0].title)
     }
 }
