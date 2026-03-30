@@ -22,7 +22,7 @@ export async function apiFetch<T>(
 
 // ─── Domain Types ────────────────────────────────────────────────────────────
 
-export type StepType = "IDEA" | "PROBLEM" | "TARGET_AUDIENCE" | "SCOPE" | "MVP" | "SPEC";
+export type StepType = "IDEA" | "PROBLEM" | "TARGET_AUDIENCE" | "SCOPE" | "MVP" | "SPEC" | "FEATURES" | "ARCHITECTURE" | "BACKEND" | "FRONTEND";
 export type StepStatus = "OPEN" | "IN_PROGRESS" | "COMPLETED";
 export type ProjectStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED";
 
@@ -341,6 +341,38 @@ export async function exportHandoff(projectId: string, request: HandoffExportReq
   });
   if (!res.ok) throw new Error("Handoff export failed");
   return res.blob();
+}
+
+// ─── Wizard Types ─────────────────────────────────────────────────────────────
+
+export interface WizardStepData {
+  fields: Record<string, any>;
+  completedAt: string | null;
+}
+
+export interface WizardData {
+  projectId: string;
+  steps: Record<string, WizardStepData>;
+}
+
+// ─── Wizard API ───────────────────────────────────────────────────────────────
+
+export async function getWizardData(projectId: string): Promise<WizardData> {
+  return apiFetch<WizardData>(`/api/v1/projects/${projectId}/wizard`);
+}
+
+export async function saveWizardData(projectId: string, data: WizardData): Promise<WizardData> {
+  return apiFetch<WizardData>(`/api/v1/projects/${projectId}/wizard`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function saveWizardStep(projectId: string, step: string, data: WizardStepData): Promise<WizardData> {
+  return apiFetch<WizardData>(`/api/v1/projects/${projectId}/wizard/${step}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function listProjectFiles(projectId: string): Promise<FileEntry[]> {
