@@ -187,6 +187,22 @@ export interface CoverageMap {
   [key: string]: boolean;
 }
 
+// ─── Handoff Types ──────────────────────────────────────────────────────────
+
+export interface HandoffPreview {
+  claudeMd: string;
+  agentsMd: string;
+  implementationOrder: string;
+  format: string;
+}
+
+export interface HandoffExportRequest {
+  format?: string;
+  claudeMd?: string;
+  agentsMd?: string;
+  implementationOrder?: string;
+}
+
 // ─── API Endpoints ──────────────────────────────────────────────────────────
 
 export async function getHealth(): Promise<{ status: string; timestamp: string }> {
@@ -293,6 +309,20 @@ export async function runChecks(projectId: string): Promise<CheckReport> {
 
 export async function getCheckResults(projectId: string): Promise<CheckReport> {
   return apiFetch<CheckReport>(`/api/v1/projects/${projectId}/checks/results`);
+}
+
+export async function getHandoffPreview(projectId: string, format: string = "claude-code"): Promise<HandoffPreview> {
+  return apiFetch<HandoffPreview>(`/api/v1/projects/${projectId}/handoff/preview?format=${format}`, { method: "POST" });
+}
+
+export async function exportHandoff(projectId: string, request: HandoffExportRequest = {}): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/api/v1/projects/${projectId}/handoff/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  if (!res.ok) throw new Error("Handoff export failed");
+  return res.blob();
 }
 
 export async function exportProject(
