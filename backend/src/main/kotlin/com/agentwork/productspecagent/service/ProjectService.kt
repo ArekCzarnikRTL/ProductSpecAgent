@@ -1,6 +1,10 @@
 package com.agentwork.productspecagent.service
 
 import com.agentwork.productspecagent.domain.*
+import com.agentwork.productspecagent.export.DocsScaffoldGenerator
+import com.agentwork.productspecagent.export.ScaffoldContext
+import com.agentwork.productspecagent.export.FeatureContext
+import com.agentwork.productspecagent.export.DecisionContext
 import com.agentwork.productspecagent.storage.ProjectStorage
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -9,7 +13,10 @@ import java.util.UUID
 class ProjectNotFoundException(id: String) : RuntimeException("Project not found: $id")
 
 @Service
-class ProjectService(private val storage: ProjectStorage) {
+class ProjectService(
+    private val storage: ProjectStorage,
+    private val scaffoldGenerator: DocsScaffoldGenerator? = null
+) {
 
     fun createProject(name: String, idea: String): ProjectResponse {
         val now = Instant.now().toString()
@@ -27,7 +34,31 @@ class ProjectService(private val storage: ProjectStorage) {
         storage.saveFlowState(flowState)
         storage.saveSpecStep(project.id, "idea.md", "# Idea\n\n$idea")
 
+        // Generate initial docs scaffold
+        generateDocsScaffold(project.id, name)
+
         return ProjectResponse(project = project, flowState = flowState)
+    }
+
+    fun regenerateDocsScaffold(projectId: String) {
+        val project = storage.loadProject(projectId) ?: throw ProjectNotFoundException(projectId)
+        generateDocsScaffold(projectId, project.name)
+    }
+
+    private fun generateDocsScaffold(projectId: String, projectName: String) {
+        val generator = scaffoldGenerator ?: return
+        val context = ScaffoldContext(
+            projectName = projectName,
+            features = emptyList(),
+            decisions = emptyList(),
+            scopeContent = null,
+            mvpContent = null,
+            techStack = "See SPEC.md for tech stack details."
+        )
+        val entries = generator.generate(context)
+        for ((path, content) in entries) {
+            storage.saveDocsFile(projectId, path, content)
+        }
     }
 
     fun getProject(id: String): ProjectResponse {

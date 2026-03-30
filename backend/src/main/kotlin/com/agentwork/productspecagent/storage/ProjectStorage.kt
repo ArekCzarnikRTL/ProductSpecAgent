@@ -84,4 +84,10 @@ class ProjectStorage(
         if (!Files.exists(file)) return null
         return Files.readString(file)
     }
+
+    fun saveDocsFile(projectId: String, relativePath: String, content: String) {
+        val file = projectDir(projectId).resolve(relativePath)
+        Files.createDirectories(file.parent)
+        Files.writeString(file, content)
+    }
 }
