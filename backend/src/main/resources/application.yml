@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: product-spec-agent
+  jackson:
+    default-property-inclusion: always
 
 cors:
   allowed-origins: "http://localhost:3000"
