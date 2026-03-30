@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback, use } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, Scale, MessageSquare, HelpCircle, Layers, Download, ShieldCheck, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExportDialog } from "@/components/export/ExportDialog";
+import { HandoffDialog } from "@/components/handoff/HandoffDialog";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { DecisionLog } from "@/components/decisions/DecisionLog";
 import { ClarificationList } from "@/components/clarifications/ClarificationList";
@@ -84,6 +85,7 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
 
   const [showDetail, setShowDetail] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showHandoff, setShowHandoff] = useState(false);
   const [rightTab, setRightTab] = useState<"chat" | "decisions" | "clarifications" | "tasks" | "checks">("chat");
   const { decisions, loadDecisions: loadDecs, reset: resetDecs } = useDecisionStore();
   const pendingCount = decisions.filter((d) => d.status === "PENDING").length;
@@ -137,6 +139,9 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
         <ChevronRight size={14} className="text-muted-foreground" />
         <span className="text-sm font-medium truncate max-w-xs">{project?.name ?? "..."}</span>
         <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowHandoff(true)} className="gap-1.5">
+            <Bot size={14} /> Handoff
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowExport(true)} className="gap-1.5">
             <Download size={14} /> Export
           </Button>
@@ -233,6 +238,12 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
         projectName={project?.name ?? "Project"}
         open={showExport}
         onClose={() => setShowExport(false)}
+      />
+      <HandoffDialog
+        projectId={id}
+        projectName={project?.name ?? "Project"}
+        open={showHandoff}
+        onClose={() => setShowHandoff(false)}
       />
     </div>
   );
