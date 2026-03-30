@@ -7,7 +7,8 @@ import java.util.UUID
 
 @Service
 open class DecisionAgent(
-    private val contextBuilder: SpecContextBuilder
+    private val contextBuilder: SpecContextBuilder,
+    private val koogRunner: KoogAgentRunner? = null
 ) {
     suspend fun generateDecision(projectId: String, title: String, stepType: FlowStepType): Decision {
         val context = contextBuilder.buildContext(projectId)
@@ -26,7 +27,8 @@ open class DecisionAgent(
     }
 
     protected open suspend fun runAgent(prompt: String): String {
-        throw UnsupportedOperationException("DecisionAgent not configured. Set ANTHROPIC_API_KEY.")
+        return koogRunner?.run("You are a product decision advisor. Generate structured decisions in JSON.", prompt)
+            ?: throw UnsupportedOperationException("KoogAgentRunner not configured.")
     }
 
     private fun parseDecisionResponse(

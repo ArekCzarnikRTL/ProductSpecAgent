@@ -14,7 +14,8 @@ open class IdeaToSpecAgent(
     private val projectService: ProjectService,
     @Value("\${agent.system-prompt}") private val baseSystemPrompt: String,
     private val decisionService: DecisionService,
-    private val clarificationService: ClarificationService
+    private val clarificationService: ClarificationService,
+    private val koogRunner: KoogAgentRunner? = null
 ) {
 
     private val stepOrder = FlowStepType.entries.toList()
@@ -107,11 +108,7 @@ open class IdeaToSpecAgent(
     }
 
     protected open suspend fun runAgent(systemPrompt: String, userMessage: String): String {
-        // In production, this calls the Koog AIAgent.
-        // For now, return a placeholder until Koog integration is verified.
-        // Subclasses in tests override this method.
-        throw UnsupportedOperationException(
-            "Koog agent not configured. Set ANTHROPIC_API_KEY environment variable."
-        )
+        return koogRunner?.run(systemPrompt, userMessage)
+            ?: throw UnsupportedOperationException("KoogAgentRunner not configured.")
     }
 }

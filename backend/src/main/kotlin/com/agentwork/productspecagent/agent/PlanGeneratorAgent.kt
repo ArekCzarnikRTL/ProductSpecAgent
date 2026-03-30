@@ -9,7 +9,8 @@ import java.util.UUID
 
 @Service
 open class PlanGeneratorAgent(
-    private val contextBuilder: SpecContextBuilder
+    private val contextBuilder: SpecContextBuilder,
+    private val koogRunner: KoogAgentRunner? = null
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -30,7 +31,8 @@ open class PlanGeneratorAgent(
     }
 
     protected open suspend fun runAgent(prompt: String): String {
-        throw UnsupportedOperationException("PlanGeneratorAgent not configured.")
+        return koogRunner?.run("You are a product implementation planner. Generate structured plans in JSON.", prompt)
+            ?: throw UnsupportedOperationException("KoogAgentRunner not configured.")
     }
 
     private fun parsePlanResponse(raw: String, projectId: String): List<SpecTask> {

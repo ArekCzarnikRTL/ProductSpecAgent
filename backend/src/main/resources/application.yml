@@ -12,11 +12,11 @@ cors:
 
 ai:
   koog:
-    anthropic:
-      api-key: ${ANTHROPIC_API_KEY:not-set}
+    openai:
+      api-key: ${OPENAI_API_KEY:not-set}
 
 agent:
-  model: claude-sonnet-4-6
+  model: gpt-4o
   system-prompt: |
     You are IdeaToSpec, an expert product specification assistant. You guide product teams through a structured process to turn raw ideas into detailed specifications.
 
