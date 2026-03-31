@@ -399,3 +399,26 @@ export async function exportProject(
   if (!res.ok) throw new Error("Export failed");
   return res.blob();
 }
+
+// ─── Wizard Chat Types ───────────────────────────────────────────────────────
+
+export interface WizardStepCompleteRequest {
+  step: string;
+  fields: Record<string, any>;
+}
+
+export interface WizardStepCompleteResponse {
+  message: string;
+  nextStep: string | null;
+  exportTriggered: boolean;
+}
+
+export async function completeWizardStep(
+  projectId: string,
+  data: WizardStepCompleteRequest
+): Promise<WizardStepCompleteResponse> {
+  return apiFetch<WizardStepCompleteResponse>(
+    `/api/v1/projects/${projectId}/agent/wizard-step-complete`,
+    { method: "POST", body: JSON.stringify(data) }
+  );
+}
