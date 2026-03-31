@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { WizardData, WizardStepData } from "@/lib/api";
 import { getWizardData, saveWizardStep } from "@/lib/api";
+import { getVisibleSteps } from "@/lib/category-step-config";
 
 export const WIZARD_STEPS = [
   { key: "IDEA", label: "Idee", number: 1 },
@@ -29,6 +30,8 @@ interface WizardState {
   goNext: () => void;
   goPrev: () => void;
   reset: () => void;
+  getCategory: () => string | undefined;
+  visibleSteps: () => typeof WIZARD_STEPS[number][];
 }
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -50,6 +53,17 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   },
 
   setActiveStep: (step) => set({ activeStep: step }),
+
+  getCategory: () => {
+    const { data } = get();
+    return data?.steps["IDEA"]?.fields?.category as string | undefined;
+  },
+
+  visibleSteps: () => {
+    const category = get().getCategory();
+    const visible = getVisibleSteps(category);
+    return WIZARD_STEPS.filter((s) => visible.includes(s.key));
+  },
 
   updateField: (step, field, value) => {
     const { data } = get();
@@ -110,15 +124,17 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   },
 
   goNext: () => {
-    const { activeStep } = get();
-    const idx = WIZARD_STEPS.findIndex((s) => s.key === activeStep);
-    if (idx < WIZARD_STEPS.length - 1) set({ activeStep: WIZARD_STEPS[idx + 1].key });
+    const { activeStep, visibleSteps } = get();
+    const steps = visibleSteps();
+    const idx = steps.findIndex((s) => s.key === activeStep);
+    if (idx < steps.length - 1) set({ activeStep: steps[idx + 1].key });
   },
 
   goPrev: () => {
-    const { activeStep } = get();
-    const idx = WIZARD_STEPS.findIndex((s) => s.key === activeStep);
-    if (idx > 0) set({ activeStep: WIZARD_STEPS[idx - 1].key });
+    const { activeStep, visibleSteps } = get();
+    const steps = visibleSteps();
+    const idx = steps.findIndex((s) => s.key === activeStep);
+    if (idx > 0) set({ activeStep: steps[idx - 1].key });
   },
 
   reset: () => set({ data: null, activeStep: "IDEA", loading: false, saving: false }),
