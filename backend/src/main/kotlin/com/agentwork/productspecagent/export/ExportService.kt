@@ -100,6 +100,17 @@ class ExportService(
     private fun generateSpec(projectId: String, flowState: FlowState): String = buildString {
         appendLine("# Product Specification")
         appendLine()
+
+        // Include auto-generated spec.md if it exists
+        val autoSpec = projectService.readSpecFile(projectId, "spec.md")
+        if (autoSpec != null) {
+            appendLine(autoSpec)
+            appendLine()
+            appendLine("---")
+            appendLine()
+        }
+
+        // Include individual step files
         for (step in flowState.steps) {
             val fileName = step.stepType.name.lowercase() + ".md"
             val content = projectService.readSpecFile(projectId, fileName)
