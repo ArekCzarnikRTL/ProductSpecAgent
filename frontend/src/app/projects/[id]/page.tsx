@@ -20,6 +20,8 @@ import { StepIndicator } from "@/components/wizard/StepIndicator";
 import { WizardForm } from "@/components/wizard/WizardForm";
 import { useWizardStore } from "@/lib/stores/wizard-store";
 import { cn } from "@/lib/utils";
+import { useResizable } from "@/lib/hooks/use-resizable";
+import { ResizeHandle } from "@/components/layout/ResizeHandle";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -56,6 +58,12 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
     loadCoverage(id);
     useWizardStore.getState().loadWizard(id);
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { width: sidebarWidth, isDragging, handleProps } = useResizable({
+    initialWidth: 340,
+    minWidth: 280,
+    maxWidth: 600,
+  });
 
   if (projectLoading) {
     return (
@@ -122,7 +130,9 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
             <WizardForm projectId={id} />
           </div>
         </div>
-        <div className="w-[340px] shrink-0 overflow-hidden flex flex-col border-l">
+        <div className="shrink-0 overflow-hidden flex flex-row" style={{ width: sidebarWidth }}>
+          <ResizeHandle isDragging={isDragging} onMouseDown={handleProps.onMouseDown} />
+          <div className="flex-1 overflow-hidden flex flex-col border-l">
           {/* Tab buttons */}
           <div className="flex border-b">
             <button
@@ -193,6 +203,7 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
             ) : (
               <CheckResultsPanel projectId={id} />
             )}
+          </div>
           </div>
         </div>
       </div>
