@@ -2,6 +2,8 @@ package com.agentwork.productspecagent.agent
 
 import com.agentwork.productspecagent.domain.FlowStepStatus
 import com.agentwork.productspecagent.domain.FlowStepType
+import com.agentwork.productspecagent.domain.WizardData
+import com.agentwork.productspecagent.domain.WizardStepData
 import com.agentwork.productspecagent.service.ProjectService
 import org.springframework.stereotype.Component
 
@@ -34,6 +36,35 @@ class SpecContextBuilder(
                 appendLine()
             }
             appendLine("=== END CONTEXT ===")
+        }.trim()
+    }
+
+    fun buildWizardContext(
+        wizardData: WizardData,
+        currentStep: String,
+        currentFields: Map<String, Any>
+    ): String {
+        return buildString {
+            appendLine("=== WIZARD CONTEXT ===")
+
+            val completedSteps = wizardData.steps.filter { it.value.completedAt != null }
+            if (completedSteps.isNotEmpty()) {
+                appendLine("=== COMPLETED STEPS ===")
+                for ((stepName, stepData) in completedSteps) {
+                    appendLine("### $stepName")
+                    for ((key, value) in stepData.fields) {
+                        appendLine("$key: $value")
+                    }
+                    appendLine()
+                }
+            }
+
+            appendLine("=== CURRENT STEP: $currentStep ===")
+            for ((key, value) in currentFields) {
+                appendLine("$key: $value")
+            }
+            appendLine()
+            appendLine("=== END WIZARD CONTEXT ===")
         }.trim()
     }
 }
