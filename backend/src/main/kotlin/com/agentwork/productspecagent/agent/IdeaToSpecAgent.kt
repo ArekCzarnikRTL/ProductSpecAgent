@@ -172,6 +172,22 @@ open class IdeaToSpecAgent(
             projectService.saveSpecFile(projectId, fileName, markdownContent)
         }
 
+        // Generate spec summary on last step
+        if (isLastStep && currentStepType != null) {
+            val allWizardData = wizardService.getWizardData(projectId)
+            val fullContext = contextBuilder.buildWizardContext(allWizardData, step, fields)
+            val summaryPrompt = buildString {
+                appendLine("Based on all the information gathered in the wizard steps below, generate a complete product specification summary in markdown format.")
+                appendLine("Include sections for: Product Overview, Problem, Target Audience, Scope, MVP, and any technical decisions made.")
+                appendLine()
+                appendLine(fullContext)
+            }
+            val localeInstruction = buildLocaleInstruction(locale)
+            val summarySystemPrompt = "$baseSystemPrompt\n\n$localeInstruction"
+            val specContent = runAgent(summarySystemPrompt, summaryPrompt)
+            projectService.saveSpecFile(projectId, "spec.md", specContent)
+        }
+
         val exportTriggered = isLastStep
 
         return WizardStepCompleteResponse(
