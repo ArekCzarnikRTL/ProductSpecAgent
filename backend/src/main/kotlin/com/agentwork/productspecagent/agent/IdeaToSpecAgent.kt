@@ -5,6 +5,7 @@ import com.agentwork.productspecagent.service.ClarificationService
 import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
 import com.agentwork.productspecagent.service.WizardService
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -20,6 +21,7 @@ open class IdeaToSpecAgent(
     private val koogRunner: KoogAgentRunner? = null
 ) {
 
+    private val logger = LoggerFactory.getLogger(IdeaToSpecAgent::class.java)
     private val stepOrder = FlowStepType.entries.toList()
 
     suspend fun chat(projectId: String, userMessage: String, locale: String = "en"): ChatResponse {
@@ -29,28 +31,24 @@ open class IdeaToSpecAgent(
         val currentStep = flowState.currentStep
 
         val localeInstruction = buildLocaleInstruction(locale)
-        val systemPromptWithContext = "$baseSystemPrompt\n\n$localeInstruction\n\n$context"
+        val stepPrompt = buildStepPrompt(currentStep)
+        val systemPromptWithContext = "$baseSystemPrompt\n\n$stepPrompt\n\n$localeInstruction\n\n$context"
 
         val rawResponse = runAgent(systemPromptWithContext, userMessage)
 
         val stepCompleted = rawResponse.contains("[STEP_COMPLETE]")
-        val summaryMatch = Regex("""\[STEP_SUMMARY]:\s*(.+)""", RegexOption.DOT_MATCHES_ALL)
+        val summaryMatch = Regex("""\[STEP_SUMMARY]\s*[:：]\s*(.+)""", RegexOption.DOT_MATCHES_ALL)
             .find(rawResponse)
         val summaryContent = summaryMatch?.groupValues?.get(1)?.trim()
 
-        val decisionMatch = Regex("""\[DECISION_NEEDED]:\s*(.+)""").find(rawResponse)
-        val decisionTitle = decisionMatch?.groupValues?.get(1)?.trim()
+        val decisionTitle = extractDecisionTitle(rawResponse)
+        val clarification = extractClarification(rawResponse)
+        val clarificationQuestion = clarification?.first
+        val clarificationReason = clarification?.second
 
-        val clarificationMatch = Regex("""\[CLARIFICATION_NEEDED]:\s*([^|]+)\|\s*(.+)""").find(rawResponse)
-        val clarificationQuestion = clarificationMatch?.groupValues?.get(1)?.trim()
-        val clarificationReason = clarificationMatch?.groupValues?.get(2)?.trim()
+        logger.info("chat() markers – decision={}, clarification={}", decisionTitle, clarificationQuestion)
 
-        val cleanMessage = rawResponse
-            .replace("[STEP_COMPLETE]", "")
-            .replace(Regex("""\[STEP_SUMMARY]:[^\n]*"""), "")
-            .replace(Regex("""\[DECISION_NEEDED]:[^\n]*"""), "")
-            .replace(Regex("""\[CLARIFICATION_NEEDED]:[^\n]*"""), "")
-            .trim()
+        val cleanMessage = cleanMarkers(rawResponse)
 
         var nextStep = currentStep
         var flowStateChanged = false
@@ -119,25 +117,39 @@ open class IdeaToSpecAgent(
         val wizardData = wizardService.getWizardData(projectId)
         val wizardContext = contextBuilder.buildWizardContext(wizardData, step, fields)
 
-        val prompt = buildString {
-            appendLine("The user just completed wizard step: $step")
-            appendLine("Please provide brief, helpful feedback about their input for this step.")
-            appendLine("Be encouraging and mention any suggestions for improvement if applicable.")
-        }
+        val prompt = buildWizardStepFeedbackPrompt(step, fields)
 
+        val currentStepType = try { FlowStepType.valueOf(step) } catch (_: Exception) { null }
+        val stepPrompt = if (currentStepType != null) buildStepPrompt(currentStepType) else ""
         val localeInstruction = buildLocaleInstruction(locale)
-        val systemPromptWithContext = "$baseSystemPrompt\n\n$localeInstruction\n\n$wizardContext"
+        val systemPromptWithContext = "$baseSystemPrompt\n\n$stepPrompt\n\n$localeInstruction\n\n$wizardContext"
 
         val rawResponse = runAgent(systemPromptWithContext, prompt)
-        val cleanMessage = rawResponse
-            .replace("[STEP_COMPLETE]", "")
-            .replace(Regex("""\[STEP_SUMMARY]:[^\n]*"""), "")
-            .replace(Regex("""\[DECISION_NEEDED]:[^\n]*"""), "")
-            .replace(Regex("""\[CLARIFICATION_NEEDED]:[^\n]*"""), "")
-            .trim()
+
+        val decisionTitle = extractDecisionTitle(rawResponse)
+        val clarification = extractClarification(rawResponse)
+        val clarificationQuestion = clarification?.first
+        val clarificationReason = clarification?.second
+
+        logger.info("processWizardStep({}) markers – decision={}, clarification={}", step, decisionTitle, clarificationQuestion)
+
+        val cleanMessage = cleanMarkers(rawResponse)
+
+        var createdDecisionId: String? = null
+        if (decisionTitle != null && currentStepType != null) {
+            val decision = decisionService.createDecision(projectId, decisionTitle, currentStepType)
+            createdDecisionId = decision.id
+        }
+
+        var createdClarificationId: String? = null
+        if (clarificationQuestion != null && clarificationReason != null && currentStepType != null) {
+            val clarification = clarificationService.createClarification(
+                projectId, clarificationQuestion, clarificationReason, currentStepType
+            )
+            createdClarificationId = clarification.id
+        }
 
         // Determine next step
-        val currentStepType = try { FlowStepType.valueOf(step) } catch (_: Exception) { null }
         val isLastStep = currentStepType != null && stepOrder.indexOf(currentStepType) == stepOrder.size - 1
 
         val nextStepType = if (currentStepType != null && !isLastStep) {
@@ -193,8 +205,107 @@ open class IdeaToSpecAgent(
         return WizardStepCompleteResponse(
             message = cleanMessage,
             nextStep = nextStepType?.name,
-            exportTriggered = exportTriggered
+            exportTriggered = exportTriggered,
+            decisionId = createdDecisionId,
+            clarificationId = createdClarificationId
         )
+    }
+
+    private fun buildWizardStepFeedbackPrompt(step: String, fields: Map<String, Any>): String {
+        val fieldsDescription = fields.entries.joinToString("\n") { "- ${it.key}: ${it.value}" }
+        return when (step) {
+            "IDEA" -> buildString {
+                appendLine("The user just completed the IDEA wizard step with the following input:")
+                appendLine(fieldsDescription)
+                appendLine()
+                appendLine("IMPORTANT: This is the IDEA step. Focus ONLY on the idea itself. Do NOT discuss problem statement, target audience, value proposition, or technical details – these are handled in later steps (PROBLEM, TARGET_AUDIENCE, SCOPE, etc.).")
+                appendLine()
+                appendLine("Analyze ONLY the idea:")
+                appendLine("1. Is the product idea clearly described? Can you understand what the product is supposed to DO?")
+                appendLine("2. Does the chosen category fit?")
+                appendLine("3. Is the product name clear and fitting?")
+                appendLine("4. Is the vision concrete enough to work with, or is it too vague?")
+                appendLine()
+                appendLine("If the vision is too vague (e.g. just a few words), ask the user to elaborate on WHAT the product does – not WHY or for WHOM (those come later).")
+                appendLine("If the idea is clear enough, acknowledge it and confirm it as a solid starting point.")
+                appendLine()
+                appendLine(MARKER_REMINDER)
+            }
+            "PROBLEM" -> buildString {
+                appendLine("The user just completed the PROBLEM wizard step with the following input:")
+                appendLine(fieldsDescription)
+                appendLine()
+                appendLine("Analyze the problem definition:")
+                appendLine("1. Is the core problem clearly defined and specific enough?")
+                appendLine("2. Are the current solutions and their shortcomings well understood?")
+                appendLine("3. Are the pain points concrete and measurable?")
+                appendLine()
+                appendLine("If there are contradictions or missing aspects, use [CLARIFICATION_NEEDED].")
+                appendLine("Be encouraging and constructive.")
+                appendLine()
+                appendLine(MARKER_REMINDER)
+            }
+            "TARGET_AUDIENCE" -> buildString {
+                appendLine("The user just completed the TARGET_AUDIENCE wizard step with the following input:")
+                appendLine(fieldsDescription)
+                appendLine()
+                appendLine("Analyze the target audience definition:")
+                appendLine("1. Is the primary audience clearly defined?")
+                appendLine("2. Are user needs specific and actionable?")
+                appendLine("3. Is there a potential conflict between primary and secondary audiences?")
+                appendLine()
+                appendLine("If the audience is too broad or there is a strategic choice to make (e.g., B2B vs B2C), use [DECISION_NEEDED].")
+                appendLine("If important details are missing, use [CLARIFICATION_NEEDED].")
+                appendLine("Be encouraging and constructive.")
+                appendLine()
+                appendLine(MARKER_REMINDER)
+            }
+            "SCOPE" -> buildString {
+                appendLine("The user just completed the SCOPE wizard step with the following input:")
+                appendLine(fieldsDescription)
+                appendLine()
+                appendLine("Analyze the scope definition:")
+                appendLine("1. Is the boundary between in-scope and out-of-scope clear?")
+                appendLine("2. Are the constraints realistic?")
+                appendLine("3. Is the scope appropriate for the stated timeline and budget?")
+                appendLine()
+                appendLine("If a scope trade-off needs user input (e.g., reduce features vs. extend timeline), use [DECISION_NEEDED].")
+                appendLine("If constraints are unclear or contradictory, use [CLARIFICATION_NEEDED].")
+                appendLine("Be encouraging and constructive.")
+                appendLine()
+                appendLine(MARKER_REMINDER)
+            }
+            "ARCHITECTURE" -> buildString {
+                appendLine("The user just completed the ARCHITECTURE wizard step with the following input:")
+                appendLine(fieldsDescription)
+                appendLine()
+                appendLine("Analyze the architecture:")
+                appendLine("1. Does the tech stack fit the requirements and team skills?")
+                appendLine("2. Is the system design appropriate for the scale?")
+                appendLine("3. Are there important architectural trade-offs to consider?")
+                appendLine()
+                appendLine("If there is a major architectural choice (e.g., monolith vs. microservices, SQL vs. NoSQL), use [DECISION_NEEDED].")
+                appendLine("If details are unclear, use [CLARIFICATION_NEEDED].")
+                appendLine("Be encouraging and constructive.")
+                appendLine()
+                appendLine(MARKER_REMINDER)
+            }
+            else -> buildString {
+                appendLine("The user just completed wizard step: $step")
+                appendLine("Their input:")
+                appendLine(fieldsDescription)
+                appendLine()
+                appendLine("Please provide brief, helpful feedback about their input for this step.")
+                appendLine("Be encouraging and mention any suggestions for improvement if applicable.")
+                appendLine()
+                appendLine(MARKER_REMINDER)
+            }
+        }
+    }
+
+    private fun buildStepPrompt(step: FlowStepType): String = when (step) {
+        FlowStepType.IDEA -> IDEA_STEP_PROMPT
+        else -> ""
     }
 
     private fun buildLocaleInstruction(locale: String): String {
@@ -213,8 +324,128 @@ open class IdeaToSpecAgent(
         }
     }
 
+    /**
+     * Extracts a decision title from the raw response.
+     * Handles variants: [DECISION_NEEDED]: ..., **[DECISION_NEEDED]**: ..., `[DECISION_NEEDED]`: ...
+     */
+    fun extractDecisionTitle(raw: String): String? {
+        val pattern = Regex("""\[DECISION_NEEDED]\s*[:：]\s*(.+)""")
+        // Also try markdown-escaped variants
+        val markdownPattern = Regex("""\*?\*?\[DECISION_NEEDED]\*?\*?\s*[:：]\s*(.+)""")
+        val match = pattern.find(raw) ?: markdownPattern.find(raw)
+        return match?.groupValues?.get(1)?.trim()?.removeSurrounding("**")?.removeSurrounding("`")
+    }
+
+    /**
+     * Extracts a clarification question and reason from the raw response.
+     * Handles variants with markdown formatting and different separator styles.
+     */
+    fun extractClarification(raw: String): Pair<String, String>? {
+        // Standard: [CLARIFICATION_NEEDED]: question | reason
+        val pattern = Regex("""\[CLARIFICATION_NEEDED]\s*[:：]\s*([^|]+)\|\s*(.+)""")
+        val markdownPattern = Regex("""\*?\*?\[CLARIFICATION_NEEDED]\*?\*?\s*[:：]\s*([^|]+)\|\s*(.+)""")
+        val match = pattern.find(raw) ?: markdownPattern.find(raw)
+        if (match != null) {
+            val question = match.groupValues[1].trim().removeSurrounding("**").removeSurrounding("`")
+            val reason = match.groupValues[2].trim().removeSurrounding("**").removeSurrounding("`")
+            return Pair(question, reason)
+        }
+        // Fallback: [CLARIFICATION_NEEDED]: question (without pipe separator – use whole text as question)
+        val fallbackPattern = Regex("""\[CLARIFICATION_NEEDED]\s*[:：]\s*(.+)""")
+        val fallbackMatch = fallbackPattern.find(raw)
+        if (fallbackMatch != null) {
+            val text = fallbackMatch.groupValues[1].trim()
+            return Pair(text, "Klärung erforderlich um fortfahren zu können")
+        }
+        return null
+    }
+
+    /**
+     * Removes all marker lines from the response for clean display.
+     */
+    fun cleanMarkers(raw: String): String {
+        return raw
+            .replace("[STEP_COMPLETE]", "")
+            .replace(Regex("""\*?\*?\[STEP_SUMMARY]\*?\*?\s*[:：][^\n]*"""), "")
+            .replace(Regex("""\*?\*?\[DECISION_NEEDED]\*?\*?\s*[:：][^\n]*"""), "")
+            .replace(Regex("""\*?\*?\[CLARIFICATION_NEEDED]\*?\*?\s*[:：][^\n]*"""), "")
+            .trim()
+    }
+
     protected open suspend fun runAgent(systemPrompt: String, userMessage: String): String {
-        return koogRunner?.run(systemPrompt, userMessage)
+        val result = koogRunner?.run(systemPrompt, userMessage)
             ?: throw UnsupportedOperationException("KoogAgentRunner not configured.")
+        logger.info("Agent raw response (last 500 chars): ...{}", result.takeLast(500))
+        return result
+    }
+
+    companion object {
+        const val MARKER_REMINDER = """
+MANDATORY OUTPUT REQUIREMENT:
+After your feedback text, you MUST end your response with at least one of these markers on its own line:
+- [DECISION_NEEDED]: <short title> — when the user faces a strategic choice between 2-3 options
+- [CLARIFICATION_NEEDED]: <question> | <why this matters> — when important information is missing, vague, or contradictory
+
+If the user input is perfect and complete with no ambiguity whatsoever, you may omit markers. But in most cases, there IS something to clarify or decide. Err on the side of including a marker.
+
+Example response ending:
+---
+Deine Idee ist ein guter Ausgangspunkt! Allerdings ist noch unklar, wer genau die Zielgruppe ist.
+
+[CLARIFICATION_NEEDED]: Wer ist die primaere Zielgruppe – Entwickler oder Nicht-Techniker? | Die Zielgruppe bestimmt die gesamte UX-Richtung und das Feature-Set grundlegend.
+---"""
+
+        val IDEA_STEP_PROMPT = """
+=== IDEA STEP INSTRUCTIONS ===
+
+Du bist ein erfahrener Produktberater. In diesem Schritt geht es NUR darum, die Produktidee selbst klar zu formulieren.
+
+WICHTIG – ABGRENZUNG:
+- Sprich NICHT über Problemstellung, Zielgruppe, Nutzerwert, Pricing oder technische Details.
+- Diese Themen werden in späteren Schritten behandelt (PROBLEM, TARGET_AUDIENCE, SCOPE, MVP, etc.).
+- Auch wenn die Idee vage ist: bleibe beim Thema "Was ist das Produkt? Was soll es tun?"
+
+## Dein Vorgehen:
+
+### Phase 1: Kontext verstehen
+- Prüfe, welche Informationen bereits vorhanden sind (Produktname, Kategorie, Beschreibung)
+- Verstehe die Ausgangsidee und den Rahmen
+- Wenn das Vorhaben zu breit ist, hilf bei der Zerlegung und fokussiere auf den Kern
+
+### Phase 2: Idee schärfen
+- Wenn die Beschreibung zu kurz oder vage ist, frage nach:
+  - Was genau soll das Produkt tun? (Hauptfunktion)
+  - Wie soll es funktionieren? (grobe Vorstellung, nicht technisch)
+  - Was macht es anders als Bestehendes?
+- Stelle immer nur EINE Frage pro Nachricht
+
+### Phase 3: Produktrichtungen vorschlagen (wenn nötig)
+- Falls die Idee mehrere Richtungen erlaubt, stelle 2–3 mögliche Produktrichtungen vor
+- Beschreibe jeweils kurz, was das Produkt in dieser Variante wäre
+- NICHT in Spezifikation oder Umsetzung abrutschen
+
+### Phase 4: Idee bestätigen
+Sobald die Idee klar genug ist, fasse sie zusammen:
+- Produktname und Kategorie
+- Was das Produkt tut (1-2 Sätze)
+- Grobe Richtung / Ansatz
+- Hole Bestätigung ein
+
+Erst wenn der Nutzer bestätigt hat, markiere mit [STEP_COMPLETE].
+
+## Kommunikationsregeln:
+- Sei ermutigend und konstruktiv
+- Fasse dich präzise
+- Nutze vorhandene Wizard-Daten als Ausgangspunkt statt sie erneut abzufragen
+- Wenn die Vision nur wenige Worte enthält, frage KONKRET nach was das Produkt tun soll
+
+## Markers im IDEA-Schritt:
+- Nutze [CLARIFICATION_NEEDED] wenn die Produktidee zu vage ist und du nicht verstehst, was das Produkt tun soll.
+  Beispiel: [CLARIFICATION_NEEDED]: Was genau soll ProgrammAgent tun – bestehenden Code kompilieren, oder neuen Code aus Beschreibungen generieren? | Die Grundfunktion des Produkts muss klar sein bevor wir weitermachen koennen.
+- Nutze [DECISION_NEEDED] wenn es 2-3 verschiedene Produktrichtungen gibt.
+  Beispiel: [DECISION_NEEDED]: Produktrichtung wählen (Codegenerator vs. Build-Automatisierung vs. No-Code-Plattform)
+
+=== END IDEA STEP INSTRUCTIONS ===
+        """.trimIndent()
     }
 }

@@ -191,6 +191,22 @@ export const useWizardStore = create<WizardState>((set, get) => ({
         set({ chatPending: false });
       }
 
+      // If a decision was triggered, fetch it
+      if (response.decisionId) {
+        const { getDecision } = await import("@/lib/api");
+        const decision = await getDecision(projectId, response.decisionId);
+        const { useDecisionStore } = await import("@/lib/stores/decision-store");
+        useDecisionStore.getState().addDecision(decision);
+      }
+
+      // If a clarification was triggered, fetch it
+      if (response.clarificationId) {
+        const { getClarification } = await import("@/lib/api");
+        const clarification = await getClarification(projectId, response.clarificationId);
+        const { useClarificationStore } = await import("@/lib/stores/clarification-store");
+        useClarificationStore.getState().addClarification(clarification);
+      }
+
       // Handle export trigger on last step
       if (response.exportTriggered) {
         const systemMsg = {

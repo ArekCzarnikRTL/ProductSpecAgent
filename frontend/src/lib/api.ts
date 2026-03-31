@@ -413,6 +413,8 @@ export interface WizardStepCompleteResponse {
   message: string;
   nextStep: string | null;
   exportTriggered: boolean;
+  decisionId?: string | null;
+  clarificationId?: string | null;
 }
 
 export async function completeWizardStep(

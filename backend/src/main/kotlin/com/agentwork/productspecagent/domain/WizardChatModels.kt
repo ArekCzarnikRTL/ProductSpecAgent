@@ -9,5 +9,7 @@ data class WizardStepCompleteRequest(
 data class WizardStepCompleteResponse(
     val message: String,
     val nextStep: String?,
-    val exportTriggered: Boolean = false
+    val exportTriggered: Boolean = false,
+    val decisionId: String? = null,
+    val clarificationId: String? = null
 )

@@ -55,6 +55,8 @@ class FileController(
         )
     }
 
+    private val hiddenFiles = setOf("project.json", "flow-state.json", "wizard.json")
+
     private fun buildTree(dir: Path, relativePath: String): List<FileEntry> {
         if (!Files.exists(dir)) return emptyList()
 
@@ -65,6 +67,7 @@ class FileController(
                 .thenComparing { it.fileName.toString() })
                 .forEach { path ->
                     val name = path.fileName.toString()
+                    if (relativePath.isEmpty() && name in hiddenFiles) return@forEach
                     val relPath = if (relativePath.isEmpty()) name else "$relativePath/$name"
 
                     if (Files.isDirectory(path)) {
