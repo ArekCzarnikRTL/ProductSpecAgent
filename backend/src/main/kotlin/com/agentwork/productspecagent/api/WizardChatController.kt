@@ -22,6 +22,11 @@ class WizardChatController(
             return ResponseEntity.badRequest().build()
         }
 
+        val validSteps = com.agentwork.productspecagent.domain.FlowStepType.entries.map { it.name }
+        if (request.step !in validSteps) {
+            return ResponseEntity.badRequest().build()
+        }
+
         val response = runBlocking {
             ideaToSpecAgent.processWizardStep(id, request.step, request.fields)
         }

@@ -121,8 +121,6 @@ open class IdeaToSpecAgent(
             appendLine("The user just completed wizard step: $step")
             appendLine("Please provide brief, helpful feedback about their input for this step.")
             appendLine("Be encouraging and mention any suggestions for improvement if applicable.")
-            appendLine()
-            appendLine(wizardContext)
         }
 
         val systemPromptWithContext = "$baseSystemPrompt\n\n$wizardContext"
