@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useWizardStore, WIZARD_STEPS } from "@/lib/stores/wizard-store";
+import { useWizardStore } from "@/lib/stores/wizard-store";
 import { IdeaForm } from "./steps/IdeaForm";
 import { ProblemForm } from "./steps/ProblemForm";
 import { TargetAudienceForm } from "./steps/TargetAudienceForm";
@@ -32,12 +32,13 @@ interface WizardFormProps {
 }
 
 export function WizardForm({ projectId }: WizardFormProps) {
-  const { activeStep, saving, completeStep, goNext, goPrev } = useWizardStore();
+  const { activeStep, saving, completeStep, goNext, goPrev, visibleSteps } = useWizardStore();
 
-  const stepInfo = WIZARD_STEPS.find((s) => s.key === activeStep);
-  const stepIdx = WIZARD_STEPS.findIndex((s) => s.key === activeStep);
+  const steps = visibleSteps();
+  const stepInfo = steps.find((s) => s.key === activeStep);
+  const stepIdx = steps.findIndex((s) => s.key === activeStep);
   const isFirst = stepIdx === 0;
-  const isLast = stepIdx === WIZARD_STEPS.length - 1;
+  const isLast = stepIdx === steps.length - 1;
 
   const FormComponent = FORM_MAP[activeStep];
 
@@ -53,7 +54,7 @@ export function WizardForm({ projectId }: WizardFormProps) {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-lg font-bold mb-1">{stepInfo?.label ?? activeStep}</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Schritt {stepInfo?.number ?? "?"} von {WIZARD_STEPS.length}
+            Schritt {stepIdx + 1} von {steps.length}
           </p>
           {FormComponent && <FormComponent projectId={projectId} />}
         </div>
