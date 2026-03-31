@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { WizardData, WizardStepData } from "@/lib/api";
-import { getWizardData, saveWizardStep } from "@/lib/api";
+import { getWizardData, saveWizardStep, completeWizardStep } from "@/lib/api";
+import { formatStepFields } from "@/lib/step-field-labels";
+import { useProjectStore } from "@/lib/stores/project-store";
 import { getVisibleSteps } from "@/lib/category-step-config";
 
 export const WIZARD_STEPS = [
@@ -21,6 +23,7 @@ interface WizardState {
   activeStep: string;
   loading: boolean;
   saving: boolean;
+  chatPending: boolean;
 
   loadWizard: (projectId: string) => Promise<void>;
   setActiveStep: (step: string) => void;
@@ -41,6 +44,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   activeStep: "IDEA",
   loading: false,
   saving: false,
+  chatPending: false,
 
   loadWizard: async (projectId) => {
     set({ loading: true });
@@ -120,16 +124,97 @@ export const useWizardStore = create<WizardState>((set, get) => ({
   },
 
   completeStep: async (projectId, step) => {
-    const { data } = get();
+    const { data, visibleSteps } = get();
     if (!data) return;
     const stepData = data.steps[step] ?? { fields: {}, completedAt: null };
     const completed = { ...stepData, completedAt: new Date().toISOString() };
+
+    // Save the step completion locally
     set({ saving: true });
     try {
       const result = await saveWizardStep(projectId, step, completed);
       set({ data: result, saving: false });
     } catch {
       set({ saving: false });
+      return;
+    }
+
+    // Format fields as readable chat message
+    const fields = stepData.fields ?? {};
+    const plainFields: Record<string, any> = {};
+    for (const [k, v] of Object.entries(fields)) {
+      plainFields[k] = typeof v === "object" && v !== null && "value" in v
+        ? (v as any).value
+        : v;
+    }
+    const chatMessage = formatStepFields(step, plainFields);
+
+    // Add user message to chat
+    const userMsg = {
+      id: `wizard-${Date.now()}`,
+      role: "user" as const,
+      content: chatMessage,
+      timestamp: Date.now(),
+    };
+    useProjectStore.setState((s) => ({
+      messages: [...s.messages, userMsg],
+      chatSending: true,
+    }));
+
+    // Send to backend agent endpoint
+    set({ chatPending: true });
+    try {
+      const response = await completeWizardStep(projectId, { step, fields: plainFields });
+
+      // Add agent response to chat
+      const agentMsg = {
+        id: `wizard-agent-${Date.now()}`,
+        role: "agent" as const,
+        content: response.message,
+        timestamp: Date.now(),
+      };
+      useProjectStore.setState((s) => ({
+        messages: [...s.messages, agentMsg],
+        chatSending: false,
+      }));
+
+      // Navigate to next step
+      if (response.nextStep) {
+        const steps = visibleSteps();
+        const nextVisible = steps.find((s) => s.key === response.nextStep);
+        if (nextVisible) {
+          set({ activeStep: response.nextStep, chatPending: false });
+        } else {
+          set({ chatPending: false });
+        }
+      } else {
+        set({ chatPending: false });
+      }
+
+      // Handle export trigger on last step
+      if (response.exportTriggered) {
+        const systemMsg = {
+          id: `wizard-export-${Date.now()}`,
+          role: "system" as const,
+          content: "Export wurde gestartet. Das Projekt wird jetzt exportiert...",
+          timestamp: Date.now(),
+        };
+        useProjectStore.setState((s) => ({
+          messages: [...s.messages, systemMsg],
+        }));
+      }
+    } catch (err) {
+      const errMsg = {
+        id: `wizard-err-${Date.now()}`,
+        role: "system" as const,
+        content: `Fehler: ${err instanceof Error ? err.message : "Agent konnte nicht antworten"}`,
+        timestamp: Date.now(),
+      };
+      useProjectStore.setState((s) => ({
+        messages: [...s.messages, errMsg],
+        chatSending: false,
+      }));
+      set({ chatPending: false });
     }
   },
 
@@ -147,5 +232,5 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     if (idx > 0) set({ activeStep: steps[idx - 1].key });
   },
 
-  reset: () => set({ data: null, activeStep: "IDEA", loading: false, saving: false }),
+  reset: () => set({ data: null, activeStep: "IDEA", loading: false, saving: false, chatPending: false }),
 }));
