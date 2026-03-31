@@ -112,7 +112,7 @@ export const CATEGORY_STEP_CONFIG: Record<Category, CategoryConfig> = {
 };
 
 /** Default: all steps visible (no category selected) */
-export const DEFAULT_VISIBLE_STEPS = ALL_STEP_KEYS as unknown as string[];
+export const DEFAULT_VISIBLE_STEPS: string[] = [...ALL_STEP_KEYS];
 
 export function getVisibleSteps(category: string | undefined): string[] {
   if (!category) return [...DEFAULT_VISIBLE_STEPS];

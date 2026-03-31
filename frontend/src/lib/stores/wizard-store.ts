@@ -4,16 +4,16 @@ import { getWizardData, saveWizardStep } from "@/lib/api";
 import { getVisibleSteps } from "@/lib/category-step-config";
 
 export const WIZARD_STEPS = [
-  { key: "IDEA", label: "Idee", number: 1 },
-  { key: "PROBLEM", label: "Problem", number: 2 },
-  { key: "TARGET_AUDIENCE", label: "Zielgruppe", number: 3 },
-  { key: "SCOPE", label: "Scope", number: 4 },
-  { key: "MVP", label: "MVP", number: 5 },
-  { key: "SPEC", label: "Spec", number: 6 },
-  { key: "FEATURES", label: "Features", number: 7 },
-  { key: "ARCHITECTURE", label: "Architektur", number: 8 },
-  { key: "BACKEND", label: "Backend", number: 9 },
-  { key: "FRONTEND", label: "Frontend", number: 10 },
+  { key: "IDEA", label: "Idee" },
+  { key: "PROBLEM", label: "Problem" },
+  { key: "TARGET_AUDIENCE", label: "Zielgruppe" },
+  { key: "SCOPE", label: "Scope" },
+  { key: "MVP", label: "MVP" },
+  { key: "SPEC", label: "Spec" },
+  { key: "FEATURES", label: "Features" },
+  { key: "ARCHITECTURE", label: "Architektur" },
+  { key: "BACKEND", label: "Backend" },
+  { key: "FRONTEND", label: "Frontend" },
 ] as const;
 
 interface WizardState {
@@ -78,6 +78,16 @@ export const useWizardStore = create<WizardState>((set, get) => ({
       },
     };
     set({ data: updated });
+
+    // If category changed, ensure activeStep is still visible
+    if (step === "IDEA" && field === "category") {
+      const { activeStep } = get();
+      const visible = getVisibleSteps(value as string);
+      if (!visible.includes(activeStep)) {
+        const wizardVisible = WIZARD_STEPS.filter((s) => visible.includes(s.key));
+        set({ activeStep: wizardVisible[wizardVisible.length - 1].key });
+      }
+    }
 
     // Auto-save with debounce
     if (saveTimeout) clearTimeout(saveTimeout);
