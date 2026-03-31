@@ -1,0 +1,71 @@
+export const STEP_FIELD_LABELS: Record<string, Record<string, string>> = {
+  IDEA: {
+    productName: "Produktname",
+    vision: "Produktidee / Vision",
+    category: "Kategorie",
+  },
+  PROBLEM: {
+    coreProblem: "Kernproblem",
+    affected: "Wer ist betroffen?",
+    workarounds: "Aktuelle Workarounds",
+    impact: "Auswirkung (Impact)",
+  },
+  TARGET_AUDIENCE: {
+    primaryAudience: "Primaere Zielgruppe",
+    painPoints: "Pain Points",
+    techLevel: "Technisches Level",
+    secondaryAudience: "Sekundaere Zielgruppe",
+  },
+  SCOPE: {
+    inScope: "In Scope",
+    outOfScope: "Out of Scope",
+  },
+  MVP: {
+    mvpGoal: "MVP-Ziel",
+    mvpFeatures: "MVP Features",
+    successCriteria: "Erfolgskriterien",
+  },
+  SPEC: {
+    generatedSpec: "Generierte Spec",
+  },
+  FEATURES: {
+    features: "Feature-Liste",
+  },
+  ARCHITECTURE: {
+    architecture: "System-Architektur",
+    database: "Datenbank",
+    deployment: "Deployment",
+    notes: "Architektur-Notizen",
+  },
+  BACKEND: {
+    framework: "Sprache / Framework",
+    apiStyle: "API-Stil",
+    auth: "Auth-Methode",
+  },
+  FRONTEND: {
+    framework: "Framework",
+    uiLibrary: "UI Library",
+    styling: "Styling",
+    theme: "Theme",
+  },
+};
+
+export function formatStepFields(step: string, fields: Record<string, any>): string {
+  const labels = STEP_FIELD_LABELS[step] ?? {};
+  const stepLabel: Record<string, string> = {
+    IDEA: "Idee", PROBLEM: "Problem", TARGET_AUDIENCE: "Zielgruppe",
+    SCOPE: "Scope", MVP: "MVP", SPEC: "Spec", FEATURES: "Features",
+    ARCHITECTURE: "Architektur", BACKEND: "Backend", FRONTEND: "Frontend",
+  };
+
+  const lines: string[] = [`**${stepLabel[step] ?? step}**`, ""];
+
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === null || value === undefined || value === "") continue;
+    const label = labels[key] ?? key;
+    const display = Array.isArray(value) ? value.join(", ") : String(value);
+    lines.push(`${label}: ${display}`);
+  }
+
+  return lines.join("\n");
+}
