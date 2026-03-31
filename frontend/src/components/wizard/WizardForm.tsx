@@ -8,7 +8,6 @@ import { ProblemForm } from "./steps/ProblemForm";
 import { TargetAudienceForm } from "./steps/TargetAudienceForm";
 import { ScopeForm } from "./steps/ScopeForm";
 import { MvpForm } from "./steps/MvpForm";
-import { SpecForm } from "./steps/SpecForm";
 import { FeaturesForm } from "./steps/FeaturesForm";
 import { ArchitectureForm } from "./steps/ArchitectureForm";
 import { BackendForm } from "./steps/BackendForm";
@@ -20,7 +19,6 @@ const FORM_MAP: Record<string, React.ComponentType<{ projectId: string }>> = {
   TARGET_AUDIENCE: TargetAudienceForm,
   SCOPE: ScopeForm,
   MVP: MvpForm,
-  SPEC: SpecForm,
   FEATURES: FeaturesForm,
   ARCHITECTURE: ArchitectureForm,
   BACKEND: BackendForm,

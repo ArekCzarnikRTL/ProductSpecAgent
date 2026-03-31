@@ -11,7 +11,6 @@ export const WIZARD_STEPS = [
   { key: "TARGET_AUDIENCE", label: "Zielgruppe" },
   { key: "SCOPE", label: "Scope" },
   { key: "MVP", label: "MVP" },
-  { key: "SPEC", label: "Spec" },
   { key: "FEATURES", label: "Features" },
   { key: "ARCHITECTURE", label: "Architektur" },
   { key: "BACKEND", label: "Backend" },
@@ -164,7 +163,7 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     // Send to backend agent endpoint
     set({ chatPending: true });
     try {
-      const locale = typeof navigator !== "undefined" ? navigator.language : "en";
+      const locale = typeof navigator !== "undefined" ? navigator.language : "de";
       const response = await completeWizardStep(projectId, { step, fields: plainFields, locale });
 
       // Add agent response to chat

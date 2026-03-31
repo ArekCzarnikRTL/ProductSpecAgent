@@ -3,11 +3,11 @@
 export type Category = "SaaS" | "Mobile App" | "CLI Tool" | "Library" | "Desktop App" | "API";
 
 export const ALL_STEP_KEYS = [
-  "IDEA", "PROBLEM", "TARGET_AUDIENCE", "SCOPE", "MVP", "SPEC",
+  "IDEA", "PROBLEM", "TARGET_AUDIENCE", "SCOPE", "MVP",
   "FEATURES", "ARCHITECTURE", "BACKEND", "FRONTEND",
 ] as const;
 
-const BASE_STEPS = ["IDEA", "PROBLEM", "TARGET_AUDIENCE", "SCOPE", "MVP", "SPEC", "FEATURES"] as const;
+const BASE_STEPS = ["IDEA", "PROBLEM", "TARGET_AUDIENCE", "SCOPE", "MVP", "FEATURES"] as const;
 
 export type FieldOptions = Record<string, Record<string, string[]>>;
 

@@ -28,7 +28,6 @@ const STEPS: { type: StepType; label: string }[] = [
   { type: "TARGET_AUDIENCE", label: "Zielgruppe" },
   { type: "SCOPE", label: "Scope" },
   { type: "MVP", label: "MVP" },
-  { type: "SPEC", label: "Spec" },
 ];
 
 export interface EditorContext {
