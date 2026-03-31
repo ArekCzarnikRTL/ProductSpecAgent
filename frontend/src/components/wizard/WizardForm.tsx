@@ -32,19 +32,19 @@ interface WizardFormProps {
 }
 
 export function WizardForm({ projectId }: WizardFormProps) {
-  const { activeStep, saving, completeStep, goNext, goPrev, visibleSteps } = useWizardStore();
+  const { activeStep, saving, chatPending, completeStep, goPrev, visibleSteps } = useWizardStore();
 
   const steps = visibleSteps();
   const stepInfo = steps.find((s) => s.key === activeStep);
   const stepIdx = steps.findIndex((s) => s.key === activeStep);
   const isFirst = stepIdx === 0;
   const isLast = stepIdx === steps.length - 1;
+  const isWorking = saving || chatPending;
 
   const FormComponent = FORM_MAP[activeStep];
 
   async function handleNext() {
     await completeStep(projectId, activeStep);
-    if (!isLast) goNext();
   }
 
   return (
@@ -62,16 +62,17 @@ export function WizardForm({ projectId }: WizardFormProps) {
 
       {/* Navigation */}
       <div className="shrink-0 border-t px-8 py-3 flex items-center justify-between bg-card/50">
-        <Button variant="ghost" size="sm" onClick={goPrev} disabled={isFirst} className="gap-1.5">
+        <Button variant="ghost" size="sm" onClick={goPrev} disabled={isFirst || isWorking} className="gap-1.5">
           <ArrowLeft size={14} /> Zurueck
         </Button>
         <div className="flex items-center gap-2">
-          {saving && (
+          {isWorking && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 size={12} className="animate-spin" /> Saving...
+              <Loader2 size={12} className="animate-spin" />
+              {chatPending ? "Agent antwortet..." : "Saving..."}
             </span>
           )}
-          <Button size="sm" onClick={handleNext} className="gap-1.5">
+          <Button size="sm" onClick={handleNext} disabled={isWorking} className="gap-1.5">
             {isLast ? (
               <><Save size={14} /> Abschliessen</>
             ) : (
