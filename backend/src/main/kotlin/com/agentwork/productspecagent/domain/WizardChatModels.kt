@@ -2,7 +2,8 @@ package com.agentwork.productspecagent.domain
 
 data class WizardStepCompleteRequest(
     val step: String,
-    val fields: Map<String, Any>
+    val fields: Map<String, Any>,
+    val locale: String = "en"
 )
 
 data class WizardStepCompleteResponse(

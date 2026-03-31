@@ -1,7 +1,8 @@
 package com.agentwork.productspecagent.domain
 
 data class ChatRequest(
-    val message: String
+    val message: String,
+    val locale: String = "en"
 )
 
 data class ChatResponse(

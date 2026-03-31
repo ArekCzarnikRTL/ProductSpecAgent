@@ -22,13 +22,14 @@ open class IdeaToSpecAgent(
 
     private val stepOrder = FlowStepType.entries.toList()
 
-    suspend fun chat(projectId: String, userMessage: String): ChatResponse {
+    suspend fun chat(projectId: String, userMessage: String, locale: String = "en"): ChatResponse {
         val flowState = projectService.getFlowState(projectId)
         val context = contextBuilder.buildContext(projectId)
 
         val currentStep = flowState.currentStep
 
-        val systemPromptWithContext = "$baseSystemPrompt\n\n$context"
+        val localeInstruction = buildLocaleInstruction(locale)
+        val systemPromptWithContext = "$baseSystemPrompt\n\n$localeInstruction\n\n$context"
 
         val rawResponse = runAgent(systemPromptWithContext, userMessage)
 
@@ -112,7 +113,8 @@ open class IdeaToSpecAgent(
     suspend fun processWizardStep(
         projectId: String,
         step: String,
-        fields: Map<String, Any>
+        fields: Map<String, Any>,
+        locale: String = "en"
     ): WizardStepCompleteResponse {
         val wizardData = wizardService.getWizardData(projectId)
         val wizardContext = contextBuilder.buildWizardContext(wizardData, step, fields)
@@ -123,7 +125,8 @@ open class IdeaToSpecAgent(
             appendLine("Be encouraging and mention any suggestions for improvement if applicable.")
         }
 
-        val systemPromptWithContext = "$baseSystemPrompt\n\n$wizardContext"
+        val localeInstruction = buildLocaleInstruction(locale)
+        val systemPromptWithContext = "$baseSystemPrompt\n\n$localeInstruction\n\n$wizardContext"
 
         val rawResponse = runAgent(systemPromptWithContext, prompt)
         val cleanMessage = rawResponse
@@ -176,6 +179,22 @@ open class IdeaToSpecAgent(
             nextStep = nextStepType?.name,
             exportTriggered = exportTriggered
         )
+    }
+
+    private fun buildLocaleInstruction(locale: String): String {
+        val langCode = locale.split("-", "_").first().lowercase()
+        val languageName = mapOf(
+            "de" to "Deutsch", "en" to "English", "fr" to "Français",
+            "es" to "Español", "it" to "Italiano", "pt" to "Português",
+            "nl" to "Nederlands", "pl" to "Polski", "ja" to "日本語",
+            "zh" to "中文", "ko" to "한국語", "ru" to "Русский"
+        )[langCode]
+
+        return if (languageName != null) {
+            "IMPORTANT: Always respond in $languageName ($langCode). Do not switch languages."
+        } else {
+            "IMPORTANT: Always respond in the language with code '$langCode'. Do not switch languages."
+        }
     }
 
     protected open suspend fun runAgent(systemPrompt: String, userMessage: String): String {
