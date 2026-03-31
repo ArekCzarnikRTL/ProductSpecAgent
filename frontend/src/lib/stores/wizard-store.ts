@@ -164,7 +164,8 @@ export const useWizardStore = create<WizardState>((set, get) => ({
     // Send to backend agent endpoint
     set({ chatPending: true });
     try {
-      const response = await completeWizardStep(projectId, { step, fields: plainFields });
+      const locale = typeof navigator !== "undefined" ? navigator.language : "en";
+      const response = await completeWizardStep(projectId, { step, fields: plainFields, locale });
 
       // Add agent response to chat
       const agentMsg = {

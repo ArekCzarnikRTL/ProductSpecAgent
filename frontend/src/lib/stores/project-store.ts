@@ -80,7 +80,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set((s) => ({ messages: [...s.messages, userMsg], chatSending: true }));
 
     try {
-      const resp: ChatResponse = await sendChatMessage(projectId, { message });
+      const locale = typeof navigator !== "undefined" ? navigator.language : "en";
+      const resp: ChatResponse = await sendChatMessage(projectId, { message, locale });
       const agentMsg: ChatMessage = {
         id: makeId(),
         role: "agent",

@@ -59,6 +59,7 @@ export interface CreateProjectRequest {
 
 export interface ChatRequest {
   message: string;
+  locale: string;
 }
 
 export interface ChatResponse {
@@ -405,6 +406,7 @@ export async function exportProject(
 export interface WizardStepCompleteRequest {
   step: string;
   fields: Record<string, any>;
+  locale: string;
 }
 
 export interface WizardStepCompleteResponse {
