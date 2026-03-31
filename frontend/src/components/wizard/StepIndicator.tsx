@@ -1,22 +1,23 @@
 "use client";
 
-import { WIZARD_STEPS, useWizardStore } from "@/lib/stores/wizard-store";
+import { useWizardStore } from "@/lib/stores/wizard-store";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function StepIndicator() {
-  const { data, activeStep, setActiveStep } = useWizardStore();
+  const { data, activeStep, setActiveStep, visibleSteps } = useWizardStore();
+  const steps = visibleSteps();
 
   return (
     <div className="px-6 py-4 border-b bg-card/50">
       <div className="flex items-center">
-        {WIZARD_STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const stepData = data?.steps[step.key];
           const isCompleted = !!stepData?.completedAt;
           const isActive = activeStep === step.key;
 
           return (
-            <div key={step.key} className="flex items-center" style={{ flex: i < WIZARD_STEPS.length - 1 ? 1 : "none" }}>
+            <div key={step.key} className="flex items-center" style={{ flex: i < steps.length - 1 ? 1 : "none" }}>
               <button
                 onClick={() => setActiveStep(step.key)}
                 className="flex flex-col items-center gap-1 group"
@@ -29,7 +30,7 @@ export function StepIndicator() {
                     !isActive && !isCompleted && "bg-muted text-muted-foreground group-hover:bg-muted/80"
                   )}
                 >
-                  {isCompleted ? <Check size={13} /> : step.number}
+                  {isCompleted ? <Check size={13} /> : i + 1}
                 </div>
                 <span
                   className={cn(
@@ -40,7 +41,7 @@ export function StepIndicator() {
                   {step.label}
                 </span>
               </button>
-              {i < WIZARD_STEPS.length - 1 && (
+              {i < steps.length - 1 && (
                 <div className={cn(
                   "h-[2px] flex-1 mx-1 transition-colors",
                   isCompleted ? "bg-[oklch(0.65_0.15_160)]" : "bg-muted"
