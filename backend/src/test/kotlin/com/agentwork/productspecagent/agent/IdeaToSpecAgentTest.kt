@@ -4,6 +4,7 @@ import com.agentwork.productspecagent.domain.*
 import com.agentwork.productspecagent.service.ClarificationService
 import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
+import com.agentwork.productspecagent.service.WizardService
 import com.agentwork.productspecagent.storage.ClarificationStorage
 import com.agentwork.productspecagent.storage.DecisionStorage
 import com.agentwork.productspecagent.storage.ProjectStorage
@@ -26,6 +27,7 @@ class IdeaToSpecAgentTest {
     private lateinit var decisionService: DecisionService
     private lateinit var clarificationStorage: ClarificationStorage
     private lateinit var clarificationService: ClarificationService
+    private lateinit var wizardService: WizardService
 
     @BeforeEach
     fun setup() {
@@ -41,10 +43,11 @@ class IdeaToSpecAgentTest {
         decisionService = DecisionService(decisionStorage, fakeDecisionAgent)
         clarificationStorage = ClarificationStorage(tempDir.toString())
         clarificationService = ClarificationService(clarificationStorage)
+        wizardService = WizardService(storage)
     }
 
     private fun createTestAgent(agentResponse: String): IdeaToSpecAgent {
-        return object : IdeaToSpecAgent(contextBuilder, projectService, "You are IdeaToSpec.", decisionService, clarificationService) {
+        return object : IdeaToSpecAgent(contextBuilder, projectService, "You are IdeaToSpec.", decisionService, clarificationService, wizardService) {
             override suspend fun runAgent(systemPrompt: String, userMessage: String): String {
                 return agentResponse
             }

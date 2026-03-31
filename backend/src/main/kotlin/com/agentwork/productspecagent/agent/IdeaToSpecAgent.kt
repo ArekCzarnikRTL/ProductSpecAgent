@@ -4,6 +4,7 @@ import com.agentwork.productspecagent.domain.*
 import com.agentwork.productspecagent.service.ClarificationService
 import com.agentwork.productspecagent.service.DecisionService
 import com.agentwork.productspecagent.service.ProjectService
+import com.agentwork.productspecagent.service.WizardService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -15,6 +16,7 @@ open class IdeaToSpecAgent(
     @Value("\${agent.system-prompt}") private val baseSystemPrompt: String,
     private val decisionService: DecisionService,
     private val clarificationService: ClarificationService,
+    private val wizardService: WizardService,
     private val koogRunner: KoogAgentRunner? = null
 ) {
 
@@ -104,6 +106,77 @@ open class IdeaToSpecAgent(
             currentStep = nextStep.name,
             decisionId = createdDecisionId,
             clarificationId = createdClarificationId
+        )
+    }
+
+    suspend fun processWizardStep(
+        projectId: String,
+        step: String,
+        fields: Map<String, Any>
+    ): WizardStepCompleteResponse {
+        val wizardData = wizardService.getWizardData(projectId)
+        val wizardContext = contextBuilder.buildWizardContext(wizardData, step, fields)
+
+        val prompt = buildString {
+            appendLine("The user just completed wizard step: $step")
+            appendLine("Please provide brief, helpful feedback about their input for this step.")
+            appendLine("Be encouraging and mention any suggestions for improvement if applicable.")
+            appendLine()
+            appendLine(wizardContext)
+        }
+
+        val systemPromptWithContext = "$baseSystemPrompt\n\n$wizardContext"
+
+        val rawResponse = runAgent(systemPromptWithContext, prompt)
+        val cleanMessage = rawResponse
+            .replace("[STEP_COMPLETE]", "")
+            .replace(Regex("""\[STEP_SUMMARY]:[^\n]*"""), "")
+            .replace(Regex("""\[DECISION_NEEDED]:[^\n]*"""), "")
+            .replace(Regex("""\[CLARIFICATION_NEEDED]:[^\n]*"""), "")
+            .trim()
+
+        // Determine next step
+        val currentStepType = try { FlowStepType.valueOf(step) } catch (_: Exception) { null }
+        val isLastStep = currentStepType != null && stepOrder.indexOf(currentStepType) == stepOrder.size - 1
+
+        val nextStepType = if (currentStepType != null && !isLastStep) {
+            val idx = stepOrder.indexOf(currentStepType)
+            if (idx + 1 < stepOrder.size) stepOrder[idx + 1] else null
+        } else {
+            null
+        }
+
+        // Update flow state
+        if (currentStepType != null) {
+            val flowState = projectService.getFlowState(projectId)
+            val now = java.time.Instant.now().toString()
+            val updatedSteps = flowState.steps.map { s ->
+                when (s.stepType) {
+                    currentStepType -> s.copy(status = FlowStepStatus.COMPLETED, updatedAt = now)
+                    nextStepType -> s.copy(status = FlowStepStatus.IN_PROGRESS, updatedAt = now)
+                    else -> s
+                }
+            }
+            val newFlowState = flowState.copy(
+                steps = updatedSteps,
+                currentStep = nextStepType ?: currentStepType
+            )
+            projectService.updateFlowState(projectId, newFlowState)
+
+            // Save spec file
+            val fileName = step.lowercase() + ".md"
+            val title = step.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
+            val fieldsMarkdown = fields.entries.joinToString("\n") { "- **${it.key}**: ${it.value}" }
+            val markdownContent = "# $title\n\n$fieldsMarkdown"
+            projectService.saveSpecFile(projectId, fileName, markdownContent)
+        }
+
+        val exportTriggered = isLastStep
+
+        return WizardStepCompleteResponse(
+            message = cleanMessage,
+            nextStep = nextStepType?.name,
+            exportTriggered = exportTriggered
         )
     }
 
