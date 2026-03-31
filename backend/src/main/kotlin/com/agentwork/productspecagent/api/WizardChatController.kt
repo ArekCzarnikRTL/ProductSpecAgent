@@ -28,7 +28,7 @@ class WizardChatController(
         }
 
         val response = runBlocking {
-            ideaToSpecAgent.processWizardStep(id, request.step, request.fields)
+            ideaToSpecAgent.processWizardStep(id, request.step, request.fields, request.locale)
         }
 
         return ResponseEntity.ok(response)

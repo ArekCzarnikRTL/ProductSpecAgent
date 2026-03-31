@@ -23,7 +23,7 @@ class ChatController(
         }
 
         val response = runBlocking {
-            ideaToSpecAgent.chat(id, request.message)
+            ideaToSpecAgent.chat(id, request.message, request.locale)
         }
 
         return ResponseEntity.ok(response)
