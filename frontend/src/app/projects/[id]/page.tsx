@@ -127,7 +127,7 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
         <div className="flex flex-1 flex-col overflow-hidden border-r">
           <StepIndicator />
           <div className="flex-1 overflow-hidden">
-            <WizardForm projectId={id} />
+            <WizardForm projectId={id} onBlockerClick={(tab) => setRightTab(tab)} />
           </div>
         </div>
         <div className="shrink-0 overflow-hidden flex flex-row" style={{ width: sidebarWidth }}>

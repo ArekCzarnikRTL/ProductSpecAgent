@@ -3,6 +3,8 @@
 import { ArrowLeft, ArrowRight, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWizardStore } from "@/lib/stores/wizard-store";
+import { useStepBlockers } from "@/lib/hooks/use-step-blockers";
+import { BlockerBanner } from "./BlockerBanner";
 import { IdeaForm } from "./steps/IdeaForm";
 import { ProblemForm } from "./steps/ProblemForm";
 import { TargetAudienceForm } from "./steps/TargetAudienceForm";
@@ -27,10 +29,12 @@ const FORM_MAP: Record<string, React.ComponentType<{ projectId: string }>> = {
 
 interface WizardFormProps {
   projectId: string;
+  onBlockerClick?: (tab: "decisions" | "clarifications") => void;
 }
 
-export function WizardForm({ projectId }: WizardFormProps) {
+export function WizardForm({ projectId, onBlockerClick }: WizardFormProps) {
   const { activeStep, saving, chatPending, completeStep, goPrev, visibleSteps } = useWizardStore();
+  const { isBlocked, blockerSummary, firstBlockerTab } = useStepBlockers(activeStep);
 
   const steps = visibleSteps();
   const stepInfo = steps.find((s) => s.key === activeStep);
@@ -42,6 +46,10 @@ export function WizardForm({ projectId }: WizardFormProps) {
   const FormComponent = FORM_MAP[activeStep];
 
   async function handleNext() {
+    if (isBlocked) {
+      onBlockerClick?.(firstBlockerTab);
+      return;
+    }
     await completeStep(projectId, activeStep);
   }
 
@@ -59,24 +67,37 @@ export function WizardForm({ projectId }: WizardFormProps) {
       </div>
 
       {/* Navigation */}
-      <div className="shrink-0 border-t px-8 py-3 flex items-center justify-between bg-card/50">
-        <Button variant="ghost" size="sm" onClick={goPrev} disabled={isFirst || isWorking} className="gap-1.5">
-          <ArrowLeft size={14} /> Zurueck
-        </Button>
-        <div className="flex items-center gap-2">
-          {isWorking && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 size={12} className="animate-spin" />
-              {chatPending ? "Agent antwortet..." : "Saving..."}
-            </span>
-          )}
-          <Button size="sm" onClick={handleNext} disabled={isWorking} className="gap-1.5">
-            {isLast ? (
-              <><Save size={14} /> Abschliessen</>
-            ) : (
-              <>Weiter <ArrowRight size={14} /></>
-            )}
+      <div className="shrink-0 border-t px-8 py-3 flex flex-col gap-2 bg-card/50">
+        {isBlocked && (
+          <BlockerBanner
+            summary={blockerSummary}
+            onClick={() => onBlockerClick?.(firstBlockerTab)}
+          />
+        )}
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={goPrev} disabled={isFirst || isWorking} className="gap-1.5">
+            <ArrowLeft size={14} /> Zurueck
           </Button>
+          <div className="flex items-center gap-2">
+            {isWorking && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Loader2 size={12} className="animate-spin" />
+                {chatPending ? "Agent antwortet..." : "Saving..."}
+              </span>
+            )}
+            <Button
+              size="sm"
+              onClick={handleNext}
+              disabled={isWorking || isBlocked}
+              className="gap-1.5"
+            >
+              {isLast ? (
+                <><Save size={14} /> Abschliessen</>
+              ) : (
+                <>Weiter <ArrowRight size={14} /></>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
