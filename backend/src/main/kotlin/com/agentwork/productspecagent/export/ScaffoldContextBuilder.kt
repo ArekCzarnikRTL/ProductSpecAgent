@@ -10,6 +10,11 @@ class ScaffoldContextBuilder(
     private val taskService: TaskService,
     private val decisionService: DecisionService
 ) {
+    private fun readNonBlankSpec(projectId: String, fileName: String): String? {
+        val content = projectService.readSpecFile(projectId, fileName)?.trim()
+        return if (content.isNullOrBlank()) null else content
+    }
+
     fun build(projectId: String): ScaffoldContext {
         val projectResp = projectService.getProject(projectId)
         val project = projectResp.project
@@ -53,13 +58,13 @@ class ScaffoldContextBuilder(
                 )
             }
 
-        val scopeContent = projectService.readSpecFile(projectId, "scope.md")
-        val mvpContent = projectService.readSpecFile(projectId, "mvp.md")
-        val problemContent = projectService.readSpecFile(projectId, "problem.md")
-        val targetAudienceContent = projectService.readSpecFile(projectId, "target_audience.md")
-        val architectureContent = projectService.readSpecFile(projectId, "architecture.md")
-        val backendContent = projectService.readSpecFile(projectId, "backend.md")
-        val frontendContent = projectService.readSpecFile(projectId, "frontend.md")
+        val scopeContent = readNonBlankSpec(projectId, "scope.md")
+        val mvpContent = readNonBlankSpec(projectId, "mvp.md")
+        val problemContent = readNonBlankSpec(projectId, "problem.md")
+        val targetAudienceContent = readNonBlankSpec(projectId, "target_audience.md")
+        val architectureContent = readNonBlankSpec(projectId, "architecture.md")
+        val backendContent = readNonBlankSpec(projectId, "backend.md")
+        val frontendContent = readNonBlankSpec(projectId, "frontend.md")
 
         return ScaffoldContext(
             projectName = project.name,
