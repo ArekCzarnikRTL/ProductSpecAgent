@@ -1,5 +1,23 @@
 # Architecture Overview: {{projectName}}
 
+{{#problemContent}}
+## Problem
+{{{problemContent}}}
+
+{{/problemContent}}
+{{#targetAudienceContent}}
+## Zielgruppe
+{{{targetAudienceContent}}}
+
+{{/targetAudienceContent}}
+## Scope
+{{#scopeContent}}{{{scopeContent}}}{{/scopeContent}}
+{{^scopeContent}}Noch nicht definiert.{{/scopeContent}}
+
+## MVP
+{{#mvpContent}}{{{mvpContent}}}{{/mvpContent}}
+{{^mvpContent}}Noch nicht definiert.{{/mvpContent}}
+
 ## Entscheidungen
 
 | Entscheidung | Gewaehlt | Begruendung |
@@ -11,18 +29,7 @@
 Keine Entscheidungen getroffen.
 {{/decisions}}
 
-## Scope
-{{#scopeContent}}
-{{{scopeContent}}}
-{{/scopeContent}}
-{{^scopeContent}}
-Noch nicht definiert.
-{{/scopeContent}}
-
-## MVP
-{{#mvpContent}}
-{{{mvpContent}}}
-{{/mvpContent}}
-{{^mvpContent}}
-Noch nicht definiert.
-{{/mvpContent}}
+{{#architectureContent}}
+## Architektur
+{{{architectureContent}}}
+{{/architectureContent}}
