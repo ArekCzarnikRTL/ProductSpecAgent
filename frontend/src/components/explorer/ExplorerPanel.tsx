@@ -1,13 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FolderTree, Loader2, RefreshCw } from "lucide-react";
+import { Bug, FolderTree, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FileTree } from "./FileTree";
 import { SpecFileViewer } from "./SpecFileViewer";
 import { listProjectFiles, type FileEntry } from "@/lib/api";
 import type { FlowState } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+const HIDDEN_FOLDERS = new Set(["clarifications", "decisions", "tasks"]);
+
+function filterEntries(entries: FileEntry[], debug: boolean): FileEntry[] {
+  if (debug) return entries;
+  return entries
+    .filter((e) => {
+      if (e.isDirectory && HIDDEN_FOLDERS.has(e.name.toLowerCase())) return false;
+      if (!e.isDirectory && e.name.endsWith(".json")) return false;
+      return true;
+    })
+    .map((e) =>
+      e.isDirectory && e.children
+        ? { ...e, children: filterEntries(e.children, debug) }
+        : e
+    );
+}
 
 type ExplorerStatus = "idle" | "generating" | "valid" | "stale";
 
@@ -27,6 +45,7 @@ export function ExplorerPanel({ projectId, flowState }: ExplorerPanelProps) {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerPath, setViewerPath] = useState<string | null>(null);
+  const [debug, setDebug] = useState(false);
 
   const completedSteps = flowState?.steps.filter((s) => s.status === "COMPLETED").length ?? 0;
   const status: ExplorerStatus = loading ? "generating" : files.length > 0 ? "valid" : "idle";
@@ -59,6 +78,15 @@ export function ExplorerPanel({ projectId, flowState }: ExplorerPanelProps) {
           </div>
           <div className="flex items-center gap-1.5">
             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => setDebug(!debug)}
+              title={debug ? "Debug: An" : "Debug: Aus"}
+              className={cn(debug && "text-amber-500")}
+            >
+              <Bug size={11} />
+            </Button>
             <Button size="icon-xs" variant="ghost" onClick={loadFiles} disabled={loading}>
               {loading ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
             </Button>
@@ -76,7 +104,7 @@ export function ExplorerPanel({ projectId, flowState }: ExplorerPanelProps) {
               No files yet. Start the spec flow to generate files.
             </div>
           ) : (
-            <FileTree entries={files} onFileClick={(path) => setViewerPath(path)} />
+            <FileTree entries={filterEntries(files, debug)} onFileClick={(path) => setViewerPath(path)} />
           )}
         </div>
       </div>
