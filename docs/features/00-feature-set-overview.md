@@ -18,6 +18,15 @@ Jedes Feature ist eine eigenständige, implementierbare Einheit. Die Reihenfolge
 | 9 | Spec File Explorer | [09-spec-file-explorer.md](09-spec-file-explorer.md) | Feature 0, 1, 6 | L |
 | 10 | Project Scaffold Export | [10-project-scaffold-export.md](10-project-scaffold-export.md) | Feature 4, 5, 8 | M |
 | 11 | Guided Wizard Forms | [11-guided-wizard-forms.md](11-guided-wizard-forms.md) | Feature 0, 1, 4, 6 | XL |
+| 12 | Dynamische Wizard-Steps | [12-dynamic-wizard-steps.md](12-dynamic-wizard-steps.md) | Feature 11 | M |
+| 13 | Wizard-Chat Integration | [13-wizard-chat-integration.md](13-wizard-chat-integration.md) | Feature 11, 1 | L |
+| 14 | Agent Locale Detection | [14-agent-locale-detection.md](14-agent-locale-detection.md) | Feature 1 | S |
+| 15 | Hide Internal Files in Explorer | [15-hide-internal-files-in-explorer.md](15-hide-internal-files-in-explorer.md) | Feature 9 | S |
+| 16 | SPEC-Step entfernen | [16-remove-spec-step.md](16-remove-spec-step.md) | Feature 11, 12, 13 | M |
+| 17 | Resizable Sidebar | [17-resizable-sidebar.md](17-resizable-sidebar.md) | Feature 6 | S |
+| 18 | Step Blocker Gate | [18-step-blocker-gate.md](18-step-blocker-gate.md) | Feature 2, 3, 11 | M |
+| 19 | Explorer Debug Toggle | [19-explorer-debug-toggle.md](19-explorer-debug-toggle.md) | Feature 9, 15 | S |
+| 20 | Spec-to-Docs Sync | [20-spec-to-docs-sync.md](20-spec-to-docs-sync.md) | Feature 1, 4, 10, 11 | M |
 
 ## Architecture Docs
 
