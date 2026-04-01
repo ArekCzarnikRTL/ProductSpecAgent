@@ -1,4 +1,4 @@
-N# Feature 19: Debug-Toggle im Explorer
+# Feature 19: Debug-Toggle im Explorer
 
 ## Zusammenfassung
 Der File Explorer blendet standardmaessig alle internen/technischen Dateien aus: `*.json`-Dateien sowie die Ordner `clarifications`, `decisions` und `tasks`. Ein Debug-Toggle (Bug-Icon) im Explorer-Header macht diese Dateien bei Bedarf wieder sichtbar. Damit sieht der User im Normalfall nur die inhaltlich relevanten Spec-Dokumente, kann aber jederzeit in den Debug-Modus wechseln um die volle Projektstruktur zu inspizieren.
