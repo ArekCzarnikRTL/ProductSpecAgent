@@ -38,4 +38,10 @@ class ProjectController(private val projectService: ProjectService) {
     fun getFlowState(@PathVariable id: String): FlowState {
         return projectService.getFlowState(id)
     }
+
+    @PostMapping("/{id}/docs/regenerate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun regenerateDocs(@PathVariable id: String) {
+        projectService.regenerateDocsScaffold(id)
+    }
 }

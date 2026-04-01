@@ -178,9 +178,9 @@ POST /api/v1/projects/{id}/docs/regenerate
 
 Dieser ruft `projectService.regenerateDocsScaffold(projectId)` auf und gibt `204 No Content` zurueck.
 
-### Feature-Parsing aus `spec/features.md`
+### Feature-Extraktion aus Tasks
 
-Die `features.md` wird vom Agent als strukturiertes Markdown erzeugt. Der `DocsScaffoldGenerator` parsed diese Datei, um pro Feature eine `FeatureContext`-Instanz zu erzeugen. Falls das Parsing fehlschlaegt (unstrukturierter Freitext), wird die gesamte `features.md` als einzelner Block in die Overview-Datei geschrieben.
+Features werden aus den bestehenden SpecTasks (EPICs) extrahiert, nicht aus `spec/features.md`. Der `ScaffoldContextBuilder` baut `FeatureContext`-Instanzen aus der Task-Hierarchie (EPIC → STORY → TASK). Dies nutzt die bereits typisierte und strukturierte Datenquelle.
 
 ## Abhaengigkeiten
 - Feature 1 (Idea-to-Spec Flow) — Spec-Dateien werden im Wizard erzeugt
