@@ -53,7 +53,12 @@ class ProjectService(
             decisions = emptyList(),
             scopeContent = null,
             mvpContent = null,
-            techStack = "See SPEC.md for tech stack details."
+            techStack = "See SPEC.md for tech stack details.",
+            problemContent = null,
+            targetAudienceContent = null,
+            architectureContent = null,
+            backendContent = null,
+            frontendContent = null
         )
         val entries = generator.generate(context)
         for ((path, content) in entries) {

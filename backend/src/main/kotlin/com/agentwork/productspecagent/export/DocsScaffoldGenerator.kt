@@ -11,7 +11,12 @@ data class ScaffoldContext(
     val decisions: List<DecisionContext>,
     val scopeContent: String?,
     val mvpContent: String?,
-    val techStack: String
+    val techStack: String,
+    val problemContent: String?,
+    val targetAudienceContent: String?,
+    val architectureContent: String?,
+    val backendContent: String?,
+    val frontendContent: String?
 )
 
 data class FeatureContext(

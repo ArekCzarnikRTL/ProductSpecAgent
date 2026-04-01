@@ -62,7 +62,12 @@ class ScaffoldContextBuilder(
             decisions = resolvedDecisions,
             scopeContent = scopeContent,
             mvpContent = mvpContent,
-            techStack = "See SPEC.md for full tech stack details."
+            techStack = "See SPEC.md for full tech stack details.",
+            problemContent = null,
+            targetAudienceContent = null,
+            architectureContent = null,
+            backendContent = null,
+            frontendContent = null
         )
     }
 }

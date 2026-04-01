@@ -21,7 +21,12 @@ class DocsScaffoldGeneratorTest {
         decisions = listOf(DecisionContext("Use JWT", "JWT tokens", "Stateless auth")),
         scopeContent = "Core auth features only.",
         mvpContent = "Login + Register.",
-        techStack = "Kotlin + Spring Boot"
+        techStack = "Kotlin + Spring Boot",
+        problemContent = null,
+        targetAudienceContent = null,
+        architectureContent = null,
+        backendContent = null,
+        frontendContent = null
     )
 
     @Test
