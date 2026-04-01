@@ -3,9 +3,11 @@ package com.agentwork.productspecagent.service
 import com.agentwork.productspecagent.domain.*
 import com.agentwork.productspecagent.export.DocsScaffoldGenerator
 import com.agentwork.productspecagent.export.ScaffoldContext
+import com.agentwork.productspecagent.export.ScaffoldContextBuilder
 import com.agentwork.productspecagent.export.FeatureContext
 import com.agentwork.productspecagent.export.DecisionContext
 import com.agentwork.productspecagent.storage.ProjectStorage
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.util.UUID
@@ -15,7 +17,8 @@ class ProjectNotFoundException(id: String) : RuntimeException("Project not found
 @Service
 class ProjectService(
     private val storage: ProjectStorage,
-    private val scaffoldGenerator: DocsScaffoldGenerator? = null
+    private val scaffoldGenerator: DocsScaffoldGenerator? = null,
+    @Lazy private val scaffoldContextBuilder: ScaffoldContextBuilder? = null
 ) {
 
     fun createProject(name: String, idea: String): ProjectResponse {
@@ -47,19 +50,23 @@ class ProjectService(
 
     private fun generateDocsScaffold(projectId: String, projectName: String) {
         val generator = scaffoldGenerator ?: return
-        val context = ScaffoldContext(
-            projectName = projectName,
-            features = emptyList(),
-            decisions = emptyList(),
-            scopeContent = null,
-            mvpContent = null,
-            techStack = "See SPEC.md for tech stack details.",
-            problemContent = null,
-            targetAudienceContent = null,
-            architectureContent = null,
-            backendContent = null,
-            frontendContent = null
-        )
+        val context = if (scaffoldContextBuilder != null) {
+            scaffoldContextBuilder.build(projectId)
+        } else {
+            ScaffoldContext(
+                projectName = projectName,
+                features = emptyList(),
+                decisions = emptyList(),
+                scopeContent = null,
+                mvpContent = null,
+                techStack = "See SPEC.md for tech stack details.",
+                problemContent = null,
+                targetAudienceContent = null,
+                architectureContent = null,
+                backendContent = null,
+                frontendContent = null
+            )
+        }
         val entries = generator.generate(context)
         for ((path, content) in entries) {
             storage.saveDocsFile(projectId, path, content)
@@ -92,6 +99,7 @@ class ProjectService(
     fun saveSpecFile(projectId: String, fileName: String, content: String) {
         storage.loadProject(projectId) ?: throw ProjectNotFoundException(projectId)
         storage.saveSpecStep(projectId, fileName, content)
+        regenerateDocsScaffold(projectId)
     }
 
     fun readSpecFile(projectId: String, fileName: String): String? {

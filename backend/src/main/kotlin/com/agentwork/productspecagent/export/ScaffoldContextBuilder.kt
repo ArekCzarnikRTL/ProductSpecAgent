@@ -55,6 +55,11 @@ class ScaffoldContextBuilder(
 
         val scopeContent = projectService.readSpecFile(projectId, "scope.md")
         val mvpContent = projectService.readSpecFile(projectId, "mvp.md")
+        val problemContent = projectService.readSpecFile(projectId, "problem.md")
+        val targetAudienceContent = projectService.readSpecFile(projectId, "target_audience.md")
+        val architectureContent = projectService.readSpecFile(projectId, "architecture.md")
+        val backendContent = projectService.readSpecFile(projectId, "backend.md")
+        val frontendContent = projectService.readSpecFile(projectId, "frontend.md")
 
         return ScaffoldContext(
             projectName = project.name,
@@ -63,11 +68,11 @@ class ScaffoldContextBuilder(
             scopeContent = scopeContent,
             mvpContent = mvpContent,
             techStack = "See SPEC.md for full tech stack details.",
-            problemContent = null,
-            targetAudienceContent = null,
-            architectureContent = null,
-            backendContent = null,
-            frontendContent = null
+            problemContent = problemContent,
+            targetAudienceContent = targetAudienceContent,
+            architectureContent = architectureContent,
+            backendContent = backendContent,
+            frontendContent = frontendContent
         )
     }
 }
