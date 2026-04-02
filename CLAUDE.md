@@ -81,7 +81,7 @@ Storage classes (`ProjectStorage`, `DecisionStorage`, etc.) use `java.nio.file` 
 
 ## Key Conventions
 
-- Use superpowers for new features and code example research with context7.
+- Use allway superpowers for new features and code example research with context7.
 - Feature specs go in `docs/features/NN-feature-name.md` (German, numbered, kebab-case)
 - Design specs go in `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
 - Implementation plans go in `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
