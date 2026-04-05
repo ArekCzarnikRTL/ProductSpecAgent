@@ -40,7 +40,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Bot size={15} />
         </div>
-        <span className="text-sm font-semibold">Spec Agent</span>
+        <span className="text-sm font-semibold text-foreground">Spec Agent</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
@@ -66,7 +66,7 @@ export function ChatPanel({ projectId }: ChatPanelProps) {
       </div>
 
       <div className="border-t p-3">
-        <div className="flex items-end gap-2 rounded-lg border bg-input p-2">
+        <div className="flex items-end gap-2 rounded-lg border border-border bg-background p-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
