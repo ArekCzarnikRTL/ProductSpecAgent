@@ -84,7 +84,7 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
 
   return (
     <div className="flex h-screen flex-col bg-background overflow-hidden">
-      <header className="flex shrink-0 items-center gap-3 border-b px-4 py-2.5">
+      <header className="flex shrink-0 items-center gap-3 border-b border-border bg-card px-4 py-2.5">
         <Link href="/projects" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={14} />
           Projects
@@ -92,33 +92,22 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
         <ChevronRight size={14} className="text-muted-foreground" />
         <span className="text-sm font-medium truncate max-w-xs">{project?.name ?? "..."}</span>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowHandoff(true)} className="gap-1.5">
+          <Button variant="ghost" size="sm" onClick={() => setShowExplorer(!showExplorer)} className="gap-1.5" title="Toggle Explorer">
+            <FolderTree size={14} />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setShowHandoff(true)} className="gap-1.5">
             <Bot size={14} /> Handoff
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowExport(true)} className="gap-1.5">
+          <Button variant="ghost" size="sm" onClick={() => setShowExport(true)} className="gap-1.5">
             <Download size={14} /> Export
           </Button>
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Activity Bar */}
-        <div className="w-10 shrink-0 border-r flex flex-col items-center py-2 gap-2">
-          <button
-            onClick={() => setShowExplorer(!showExplorer)}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-              showExplorer ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-            title="File Explorer"
-          >
-            <FolderTree size={16} />
-          </button>
-        </div>
-
         {/* Explorer Panel */}
         {showExplorer && (
-          <div className="w-60 shrink-0 border-r overflow-hidden">
+          <div className="w-60 shrink-0 border-r border-border bg-card overflow-hidden animate-slide-in-left">
             <ExplorerPanel projectId={id} flowState={flowState} />
           </div>
         )}
@@ -132,9 +121,9 @@ export default function ProjectWorkspacePage({ params }: PageProps) {
         </div>
         <div className="shrink-0 overflow-hidden flex flex-row" style={{ width: sidebarWidth }}>
           <ResizeHandle isDragging={isDragging} onMouseDown={handleProps.onMouseDown} />
-          <div className="flex-1 overflow-hidden flex flex-col border-l">
+          <div className="flex-1 overflow-hidden flex flex-col border-l border-border">
           {/* Tab buttons */}
-          <div className="flex border-b">
+          <div className="flex border-b border-border bg-card">
             <button
               onClick={() => setRightTab("chat")}
               className={cn(

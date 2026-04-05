@@ -60,7 +60,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between animate-fade-in-up">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -78,9 +78,9 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {projects.length === 0 && !error ? (
-          <div className="col-span-full flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed py-20 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <FolderKanban size={24} />
+          <div className="col-span-full flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed py-20 text-center animate-fade-in-up">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <FolderKanban size={28} />
             </div>
             <div>
               <p className="font-medium">No projects yet</p>
@@ -91,13 +91,16 @@ export default function ProjectsPage() {
             </Link>
           </div>
         ) : (
-          projects.map((p) => {
+          projects.map((p, idx) => {
             const progress = p.totalSteps > 0 ? Math.round((p.completedSteps / p.totalSteps) * 100) : 0;
             const nextStep = p.flowState?.currentStep?.replace("_", " ") ?? "—";
 
             return (
               <Link key={p.id} href={`/projects/${p.id}`} className="block group">
-                <Card className="flex flex-col h-full hover:border-primary/50 transition-colors group-hover:shadow-lg group-hover:shadow-primary/5">
+                <Card
+                  className="flex flex-col h-full hover:-translate-y-0.5 hover:shadow-md animate-fade-in-up"
+                  style={{ animationDelay: `${idx * 50}ms` }}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
