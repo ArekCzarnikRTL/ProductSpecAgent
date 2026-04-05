@@ -13,7 +13,6 @@ export function StepIndicator() {
   const { isBlocked, openClarifications, pendingDecisions } =
     useStepBlockers(activeStep);
 
-  // Build a short badge label for the blocked step
   let blockerBadge = "";
   if (isBlocked) {
     const parts: string[] = [];
@@ -23,7 +22,7 @@ export function StepIndicator() {
   }
 
   return (
-    <div className="px-6 py-4 border-b bg-card/50">
+    <div className="px-6 py-4 border-b border-border bg-card">
       <div className="flex items-center">
         {steps.map((step, i) => {
           const stepData = data?.steps[step.key];
@@ -43,12 +42,12 @@ export function StepIndicator() {
               >
                 <div
                   className={cn(
-                    "flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-all",
-                    isCompleted && "bg-[oklch(0.65_0.15_160)] text-black",
+                    "flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium transition-colors duration-150",
+                    isCompleted && "bg-accent text-accent-foreground",
                     isActive && !isCompleted && !isBlocked && "bg-primary text-primary-foreground ring-2 ring-primary/30",
-                    isActive && isBlocked && "bg-amber-500 text-black ring-2 ring-amber-500/30 animate-[pulse-amber_2s_infinite]",
-                    isLocked && "bg-muted/50 text-muted-foreground/50",
-                    !isActive && !isCompleted && !isLocked && "bg-muted text-muted-foreground group-hover:bg-muted/80"
+                    isActive && isBlocked && "bg-amber-500 text-white ring-2 ring-amber-500/30",
+                    isLocked && "bg-muted text-muted-foreground/50",
+                    !isActive && !isCompleted && !isLocked && "bg-secondary text-muted-foreground group-hover:bg-secondary/80"
                   )}
                 >
                   {isCompleted ? (
@@ -64,17 +63,17 @@ export function StepIndicator() {
                 <span
                   className={cn(
                     "text-[9px] whitespace-nowrap transition-colors",
-                    isActive && isBlocked ? "text-amber-500 font-semibold" : "",
-                    isActive && !isBlocked ? "text-primary font-semibold" : "",
-                    isCompleted && !isActive ? "text-[oklch(0.65_0.15_160)]" : "",
-                    isLocked ? "text-muted-foreground/50" : "",
-                    !isActive && !isCompleted && !isLocked ? "text-muted-foreground" : ""
+                    isActive && isBlocked && "text-amber-600 dark:text-amber-400 font-semibold",
+                    isActive && !isBlocked && "text-primary font-semibold",
+                    isCompleted && !isActive && "text-accent",
+                    isLocked && "text-muted-foreground/50",
+                    !isActive && !isCompleted && !isLocked && "text-muted-foreground"
                   )}
                 >
                   {step.label}
                 </span>
                 {isActive && isBlocked && (
-                  <span className="text-[8px] text-amber-500 bg-amber-500/15 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                  <span className="text-[8px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/15 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                     {blockerBadge}
                   </span>
                 )}
@@ -82,7 +81,7 @@ export function StepIndicator() {
               {i < steps.length - 1 && (
                 <div className={cn(
                   "h-[2px] flex-1 mx-1 transition-colors",
-                  isCompleted ? "bg-[oklch(0.65_0.15_160)]" : "bg-muted"
+                  isCompleted ? "bg-accent" : "bg-border"
                 )} />
               )}
             </div>
